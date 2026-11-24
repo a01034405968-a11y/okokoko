@@ -1,0 +1,923 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>스쿨 스페이스</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: 복도 안내판 느낌의 단일 열 앱. 상단 로고+역할 전환, 하단(모바일)/상단(데스크톱) 탭, 본문은 스캔하기 쉬운 행 목록 */
+:root{
+  --bg:#F2F5F3; --surface:#FFFFFF; --surface2:#E8EEEA; --ink:#14211F; --muted:#586763; --line:#D2DBD6;
+  --accent:#0B7A75; --accent-ink:#FFFFFF; --accent-soft:#D5ECEA;
+  --signal:#B98400; --signal-soft:#FBEFC2;
+  --ok:#1E7B3C; --ok-soft:#D9EFDF; --bad:#B93A26; --bad-soft:#F6DAD4;
+  --f-display:'Do Hyeon','IBM Plex Sans KR',sans-serif;
+  --f-body:'IBM Plex Sans KR','Noto Sans KR',system-ui,sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1614; --surface:#16221F; --surface2:#1D2D29; --ink:#E6EFEC; --muted:#9BAEA8; --line:#2B3D38;
+  --accent:#3FC6BC; --accent-ink:#06211F; --accent-soft:#123B38;
+  --signal:#F4C430; --signal-soft:#3A3210;
+  --ok:#5BD08A; --ok-soft:#12351F; --bad:#F08A76; --bad-soft:#3E1B14; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1614; --surface:#16221F; --surface2:#1D2D29; --ink:#E6EFEC; --muted:#9BAEA8; --line:#2B3D38;
+  --accent:#3FC6BC; --accent-ink:#06211F; --accent-soft:#123B38;
+  --signal:#F4C430; --signal-soft:#3A3210;
+  --ok:#5BD08A; --ok-soft:#12351F; --bad:#F08A76; --bad-soft:#3E1B14; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;
+  padding-block:0 84px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.app{max-width:960px;margin:0 auto}
+h1,h2,h3{font-family:var(--f-display);font-weight:400;letter-spacing:.01em;margin:0;text-wrap:balance}
+h2{font-size:26px;line-height:1.2} h3{font-size:19px;line-height:1.3}
+p{margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)} .small{font-size:13px}
+.stack{display:flex;flex-direction:column;gap:16px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.grow{flex:1;min-width:0}
+
+header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:14px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-size:24px}
+.logo i{display:grid;place-items:center;width:34px;height:34px;border-radius:6px;background:var(--accent);color:var(--accent-ink);font-style:normal;font-size:18px}
+.seg{display:inline-flex;border:1.5px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:none;padding:7px 12px;font-size:13px;font-weight:500;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.bell{position:relative;border:1.5px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 11px;font-size:13px;font-weight:500}
+.badge{display:inline-grid;place-items:center;min-width:19px;height:19px;padding:0 5px;margin-left:4px;border-radius:10px;background:var(--bad);color:#fff;font-size:11px;font-weight:600;vertical-align:1px}
+.rosterhead{display:flex;width:100%;align-items:center;justify-content:space-between;gap:12px;text-align:left;border:0;background:none;padding:0;color:inherit}
+.chev{font-size:18px;color:var(--muted);transition:transform .15s}
+.rosterhead[aria-expanded="true"] .chev{transform:rotate(180deg)}
+.mini{display:inline-block;width:64px;height:8px;border-radius:4px;background:var(--surface2);overflow:hidden;vertical-align:middle}
+.mini i{display:block;height:100%;background:var(--accent)}
+.mini.warn i{background:var(--signal)} .mini.bad i{background:var(--bad)}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal .dow{text-align:center;font-size:12px;font-weight:600;color:var(--muted);padding:4px 0}
+.cal button.day{min-height:52px;border:1.5px solid var(--line);background:var(--surface);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:4px 2px;min-width:0}
+.cal button.day b{font-weight:600}
+.cal button.day.today{border-color:var(--ink)}
+.cal button.day.sel{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.cal button.day[disabled]{opacity:.35;cursor:not-allowed}
+.calhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--accent)} .dot.pend{background:var(--signal)}
+.day.sel .dot{background:var(--accent-ink)}
+.cnt{font-size:11px;font-weight:600;padding:0 6px;border-radius:9px;background:var(--accent-soft);color:var(--accent)} .cnt.pend{background:var(--signal-soft);color:var(--signal)}
+.day.sel .cnt{background:rgba(255,255,255,.28);color:inherit}
+fieldset.chkset{border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:4px 12px;min-width:0}
+fieldset.chkset legend{font-size:13px;font-weight:600;color:var(--muted);padding:0 6px}
+.chk{display:flex;gap:8px;align-items:center;min-height:38px;font-size:14px;cursor:pointer}
+.chk input{width:18px;height:18px;accent-color:var(--accent);flex:none}
+.live{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.live[hidden]{display:none}
+.live i{width:8px;height:8px;border-radius:50%;background:var(--ok);display:inline-block}
+.live.off i{background:var(--muted)}
+.bell b{position:absolute;top:-7px;right:-7px;background:var(--bad);color:#fff;border-radius:10px;min-width:19px;height:19px;font-size:11px;display:grid;place-items:center;padding:0 4px}
+.notes{position:absolute;right:0;top:46px;z-index:20;width:min(340px,calc(100vw - 32px));background:var(--surface);border:1.5px solid var(--ink);border-radius:10px;padding:12px;box-shadow:0 10px 30px rgba(0,0,0,.18)}
+.notes li{list-style:none;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
+.notes li:first-child{border-top:0} .notes ul{margin:8px 0 0;padding:0}
+
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:15;display:flex;background:var(--surface);border-top:1.5px solid var(--ink);
+  padding:0 max(8px,env(safe-area-inset-right,0px)) env(safe-area-inset-bottom,0px) max(8px,env(safe-area-inset-left,0px))}
+nav.tabs button{flex:1;border:0;background:none;padding:12px 2px;font-size:13px;font-weight:500;color:var(--muted);border-top:3px solid transparent;margin-top:-1.5px}
+nav.tabs button[aria-current="page"]{color:var(--accent);border-top-color:var(--accent)}
+@media (min-width:721px){
+  body{padding-bottom:40px}
+  nav.tabs{position:static;border:0;border-bottom:1.5px solid var(--line);background:none;padding:0;margin-bottom:22px}
+  nav.tabs button{flex:none;padding:10px 20px;font-size:15px;border-top:0;border-bottom:3px solid transparent;margin:0 0 -1.5px}
+  nav.tabs button[aria-current="page"]{border-bottom-color:var(--accent)}
+}
+
+.card{background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:16px}
+.card.pop{border-color:var(--ink)}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:20px;background:var(--surface2);color:var(--muted);white-space:nowrap}
+.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.bad{background:var(--bad-soft);color:var(--bad)}
+.pill.warn{background:var(--signal-soft);color:var(--signal)} .pill.info{background:var(--accent-soft);color:var(--accent)}
+.btn{border:1.5px solid var(--ink);background:var(--surface);color:var(--ink);padding:9px 16px;border-radius:8px;font-weight:600;font-size:14px;min-height:40px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.danger{border-color:var(--bad);color:var(--bad)}
+.btn.sm{padding:5px 11px;min-height:32px;font-size:13px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1.5px solid var(--line);background:var(--surface);border-radius:20px;padding:6px 13px;font-size:14px;font-weight:500}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip.day{display:flex;flex-direction:column;align-items:center;border-radius:10px;padding:6px 12px;min-width:56px;line-height:1.25}
+.chip.day small{font-size:11px;opacity:.75}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:600;color:var(--muted)}
+input[type=text],input[type=number],input[type=search],select,textarea{border:1.5px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 11px;font-size:15px;font-weight:400;color:var(--ink);width:100%;min-height:42px}
+textarea{min-height:64px;resize:vertical}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:14px}
+.err{color:var(--bad);font-size:13px;font-weight:500}
+
+.hero{display:grid;grid-template-columns:1fr;gap:16px}
+@media (min-width:721px){.hero{grid-template-columns:1.1fr 1fr}}
+.score{font-family:var(--f-display);font-size:56px;line-height:1}
+.thermo{position:relative;height:14px;border-radius:7px;background:var(--surface2);margin:14px 0 6px;overflow:visible}
+.thermo i{position:absolute;left:0;top:0;bottom:0;border-radius:7px;background:var(--accent)}
+.thermo s{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink);opacity:.5}
+.thermo-l{position:relative;height:16px;font-size:11px;color:var(--muted)}
+.thermo-l span{position:absolute;transform:translateX(-50%)}
+.list{display:flex;flex-direction:column}
+.li{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:11px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.li:first-child{border-top:0}
+.quick{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.quick button{text-align:left;padding:14px;border:1.5px solid var(--ink);border-radius:10px;background:var(--surface);font-weight:600}
+.quick button span{display:block;font-size:12px;font-weight:400;color:var(--muted);margin-top:3px}
+
+.slot{display:grid;grid-template-columns:58px 1fr auto;gap:12px;align-items:center;width:100%;text-align:left;border:1.5px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 12px;min-height:50px;margin-bottom:6px}
+.slot .bar{height:10px;border-radius:5px;background:var(--surface2);overflow:hidden}
+.slot .bar i{display:block;height:100%;background:var(--accent)}
+.slot.full .bar i{background:var(--bad)} .slot.pend .bar i{background:var(--signal)}
+.slot.sel{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 4px 0 0 var(--accent)}
+.slot.mine{border-color:var(--ink)}
+.slot[disabled]{opacity:.5;cursor:not-allowed}
+.slot .cnt{font-size:13px;text-align:right;min-width:92px}
+
+.thumb{height:104px;border-radius:8px;display:grid;place-items:center;font-family:var(--f-display);font-size:22px;overflow:hidden;border:1.5px solid var(--line)}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;border:1px solid var(--line);vertical-align:-1px;margin-right:5px}
+.modal{position:fixed;inset:0;z-index:30;background:rgba(10,20,18,.55);display:grid;place-items:center;padding:16px}
+.modal .card{width:min(420px,100%)}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:40;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:14px;font-weight:500;max-width:calc(100vw - 32px)}
+@media (min-width:721px){#toast{bottom:28px}}
+
+.spec h2{margin-top:6px} .spec section{padding-top:26px}
+.spec h3{margin:18px 0 8px}
+.tbl{overflow-x:auto;border:1.5px solid var(--line);border-radius:10px;background:var(--surface)}
+.tbl table{border-collapse:collapse;width:100%;min-width:560px;font-size:13.5px}
+.tbl th,.tbl td{padding:8px 12px;text-align:left;vertical-align:top;border-top:1px solid var(--line)}
+.tbl tr:first-child th,.tbl tr:first-child td{border-top:0}
+.tbl th{background:var(--surface2);font-size:12px;letter-spacing:.04em;color:var(--muted)}
+.tbl code,.spec code{font-family:var(--f-mono);font-size:12.5px}
+.method{font-family:var(--f-mono);font-weight:500;font-size:12px;padding:1px 7px;border-radius:5px;background:var(--surface2)}
+.method.POST{background:var(--ok-soft);color:var(--ok)} .method.PATCH,.method.PUT{background:var(--signal-soft);color:var(--signal)} .method.DELETE{background:var(--bad-soft);color:var(--bad)}
+details.t{border:1.5px solid var(--line);border-radius:10px;background:var(--surface);margin-bottom:10px}
+details.t summary{cursor:pointer;padding:11px 14px;font-weight:600;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+details.t summary span{font-weight:400;color:var(--muted);font-size:13px}
+details.t .tbl{border:0;border-top:1px solid var(--line);border-radius:0 0 10px 10px}
+.layers{display:flex;flex-direction:column;gap:8px}
+.layers div{border:1.5px solid var(--ink);border-radius:8px;padding:10px 14px;background:var(--surface);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.layers div b{font-family:var(--f-display);font-weight:400;font-size:17px}
+.sub{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 0}
+.sub a{font-size:13px;font-weight:600;padding:5px 12px;border-radius:20px;border:1.5px solid var(--line);color:var(--ink);text-decoration:none;background:var(--surface)}
+ul.plain{margin:6px 0 0;padding-left:18px} ul.plain li{margin:3px 0}
+@media (prefers-reduced-motion:no-preference){.slot,.chip,.btn{transition:background .12s,border-color .12s}}
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="logo"><i>S</i>스쿨 스페이스</div>
+    <div class="row">
+      <span class="live off" id="live" hidden><i></i><span>연결 중</span></span>
+      <div class="seg" role="group" aria-label="사용자 역할 전환(데모)">
+        <button data-act="role" data-v="student" id="r-student">학생</button>
+        <button data-act="role" data-v="teacher" id="r-teacher">교사</button>
+      </div>
+      <div style="position:relative"><button class="bell" data-act="bell" id="bell">알림</button><div id="notes"></div></div>
+    </div>
+  </header>
+  <nav class="tabs" id="tabs" aria-label="주요 메뉴">
+    <button data-act="tab" data-v="home">홈</button>
+    <button data-act="tab" data-v="space">공간 예약</button>
+    <button data-act="tab" data-v="items">물품 대여</button>
+    <button data-act="tab" data-v="found">분실물</button>
+  </nav>
+  <main id="view"></main>
+  <footer class="small muted" style="margin-top:30px;display:flex;gap:14px;flex-wrap:wrap;align-items:center">
+    <label class="row" style="gap:6px"><input type="checkbox" id="demo" data-act="demo"> 데모 모드(체크인·반납 4시간 제한 해제, 노쇼 처리·대여 시뮬레이션 버튼 표시)</label>
+    <button class="btn sm" data-act="reset">데모 데이터 초기화</button>
+    <span>이 화면의 데이터는 이 브라우저에만 저장되는 예시입니다.</span>
+  </footer>
+</div>
+<div id="modal"></div>
+<div id="toast" hidden></div>
+
+<script>
+(function(){
+'use strict';
+var $=function(s,r){return (r||document).querySelector(s)};
+var pad=function(n){return String(n).padStart(2,'0')};
+var ymd=function(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
+var DOW=['일','월','화','수','목','금','토'];
+var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
+var startAt=function(b){return new Date(b.date+'T'+pad(b.hour)+':00:00')};
+var endAt=function(b){return new Date(startAt(b).getTime()+b.len*3600000)};
+var hm=function(d){d=new Date(d);return pad(d.getHours())+':'+pad(d.getMinutes())};
+var ago=function(t){var m=Math.round((Date.now()-t)/60000);if(m<1)return '방금';if(m<60)return m+'분 전';var h=Math.round(m/60);if(h<24)return h+'시간 전';return Math.round(h/24)+'일 전'};
+
+var FAC=[
+ {id:'hall',name:'강당',cap:200,approval:'teacher',loc:'본관 1층',note:'행사·공연·전교 모임'},
+ {id:'study',name:'자습실',cap:30,approval:'teacher',loc:'도서관 3층',note:'좌석제 열람실'},
+ {id:'pingpong',name:'탁구장',cap:12,approval:'teacher',loc:'체육관 2층',note:'탁구대 4대'},
+ {id:'music',name:'음악실',cap:20,approval:'teacher',loc:'별관 1층',note:'피아노·합주 악기'}
+];
+var FAC_ALIAS={band:'music',club:'pingpong'};
+var APPR={teacher:'교사 승인 후 확정'};
+var ST={pending:['승인 대기','warn'],confirmed:['예약 확정','info'],checked:['이용 중','ok'],done:['이용 완료','ok'],noshow:['노쇼','bad'],rejected:['반려','bad'],cancelled:['취소','']};
+var ICATS=['충전기','의류','우산','문구·계산기','기타'];
+var FCATS=['우산','지갑·카드','전자기기','의류','필기구·책','기타'];
+var PLACES=['체육관','급식실','도서관','본관 복도','운동장','음악실','교실'];
+var FSTORE={finder:'습득자가 보관',office:'학생처에 맡김',teacher:'교무실에 맡김'};
+
+function seed(){
+  var t=new Date(),d=function(n){var x=new Date(t);x.setDate(x.getDate()+n);return ymd(x)};
+  var nh=t.getHours();
+  var todayOk=nh<=17;
+  var h1=Math.min(Math.max(nh+2,16),19);
+  var now=Date.now();
+  return {v:1,role:'student',demo:true,
+    me:{name:'이명현',cls:'1학년 1반',score:37.4},
+    people:{},
+    bookings:[],
+    items:[
+      {id:'i1',title:'보조배터리 (C타입 10000mAh)',cat:'충전기',owner:'김시후',school:false,desc:'점심시간~방과후 대여 가능. 반납 시 완충 부탁해요.',status:'available'},
+      {id:'i2',title:'장우산',cat:'우산',owner:'학교 비치',school:true,desc:'학생회실 앞 우산함. 학생증 태그 후 대여.',status:'available'},
+      {id:'i3',title:'8핀 충전기 (1m)',cat:'충전기',owner:'이태윤',school:false,desc:'정품 케이블.',status:'borrowed',borrower:'이명현',at:now-60*60000,due:new Date(now+5*3600000).toISOString()},
+      {id:'i4',title:'체육복 상의 (L)',cat:'의류',owner:'정시우',school:false,desc:'세탁 완료. 체육 수업 당일 대여.',status:'available'},
+      {id:'i5',title:'공학용 계산기',cat:'문구·계산기',owner:'이명현',school:false,desc:'내 물건. 시험 기간에는 대여 중단 예정.',status:'borrowed',borrower:'박우진',at:now-6*3600000,due:new Date(now-20*60000).toISOString()},
+      {id:'i6',title:'C타입 충전기 (학교 비치)',cat:'충전기',owner:'학교 비치',school:true,desc:'도서관 데스크 반납함.',status:'available'}
+    ],
+    found:[
+      {id:'f1',title:'검정색 우산',cat:'우산',color:'#2a2a2e',cname:'검정색',place:'체육관',store:'office',t:now-3*3600000,state:'open'},
+      {id:'f2',title:'파란색 보온병',cat:'기타',color:'#2f5fd0',cname:'파란색',place:'급식실',store:'finder',t:now-26*3600000,state:'open'},
+      {id:'f3',title:'흰색 이어폰 케이스',cat:'전자기기',color:'#ececec',cname:'흰색',place:'도서관',store:'teacher',t:now-50*3600000,state:'open'},
+      {id:'f4',title:'갈색 지갑',cat:'지갑·카드',color:'#6b4a2f',cname:'갈색',place:'교실',store:'teacher',t:now-5*3600000,state:'open'},
+      {id:'f5',title:'빨간색 필통',cat:'필기구·책',color:'#c43a2f',cname:'빨간색',place:'음악실',store:'finder',t:now-9*3600000,state:'open'},
+      {id:'f6',title:'회색 후드집업',cat:'의류',color:'#8b8f94',cname:'회색',place:'운동장',store:'office',t:now-30*3600000,state:'open'},
+      {id:'f7',title:'초록색 텀블러',cat:'기타',color:'#2f8f5b',cname:'초록색',place:'급식실',store:'office',t:now-8*3600000,state:'open'},
+      {id:'f8',title:'노란색 우산',cat:'우산',color:'#e0b41f',cname:'노란색',place:'본관 복도',store:'office',t:now-18*3600000,state:'open'},
+      {id:'f9',title:'검정색 공학용 계산기',cat:'필기구·책',color:'#25262b',cname:'검정색',place:'교실',store:'teacher',t:now-1*3600000,state:'open'}
+    ],
+    students:[
+      {id:'ex-01',name:'강서후',cls:'1학년 1반',score:39.9,example:true},
+      {id:'ex-02',name:'김민준',cls:'1학년 1반',score:32.3,example:true},
+      {id:'ex-03',name:'김시후',cls:'1학년 1반',score:30.3,example:true},
+      {id:'ex-04',name:'김주빈',cls:'1학년 1반',score:40.5,example:true},
+      {id:'ex-05',name:'김지훈',cls:'1학년 1반',score:28.8,example:true},
+      {id:'ex-06',name:'박우진',cls:'1학년 1반',score:37.9,example:true},
+      {id:'ex-07',name:'박준서',cls:'1학년 1반',score:38.7,example:true},
+      {id:'ex-08',name:'박현원',cls:'1학년 1반',score:28.4,example:true},
+      {id:'ex-09',name:'배성찬',cls:'1학년 1반',score:33.6,example:true},
+      {id:'ex-10',name:'서용맹',cls:'1학년 1반',score:42.8,example:true},
+      {id:'ex-11',name:'신민준',cls:'1학년 1반',score:40.8,example:true},
+      {id:'ex-12',name:'유다호',cls:'1학년 1반',score:42.3,example:true},
+      {id:'ex-14',name:'이성은',cls:'1학년 1반',score:37.0,example:true},
+      {id:'ex-15',name:'이승민',cls:'1학년 1반',score:34.5,example:true},
+      {id:'ex-16',name:'이승준',cls:'1학년 1반',score:43.8,example:true},
+      {id:'ex-17',name:'이태윤',cls:'1학년 1반',score:35.9,example:true},
+      {id:'ex-18',name:'임재혁',cls:'1학년 1반',score:35.8,example:true},
+      {id:'ex-19',name:'정시우',cls:'1학년 1반',score:35.4,example:true},
+      {id:'ex-20',name:'차원비',cls:'1학년 1반',score:40.5,example:true},
+      {id:'ex-21',name:'최윤형',cls:'1학년 1반',score:41.9,example:true},
+      {id:'ex-22',name:'탁요셉',cls:'1학년 1반',score:33.6,example:true},
+      {id:'ex-23',name:'홍성문',cls:'1학년 1반',score:35.3,example:true},
+      {id:'ex-24',name:'황민찬',cls:'1학년 1반',score:37.8,example:true},
+      {id:'ex-25',name:'강석준',cls:'1학년 1반',score:40.2,example:true},
+      {id:'ex-26',name:'박승완',cls:'1학년 1반',score:41.9,example:true}],
+    reports:[],claims:[],
+    alerts:['지갑'],
+    notes:[{id:'n1',text:'환영해요. 공간 예약과 물품 대여는 매너온도 30 이상부터 이용할 수 있어요.',t:now,read:false}],
+    log:[]};
+}
+var S=null;
+function load(){try{var r=JSON.parse(localStorage.getItem('ss-demo-v2'));if(r&&r.v===1)return r}catch(e){}return null}
+function save(){try{localStorage.setItem('ss-demo-v2',JSON.stringify(S))}catch(e){}}
+S=load()||seed();
+if(S.scoreSeed!==3){S.me.score=37.4;S.scoreSeed=3;S.demo=true}
+if(S.me.name!=='이명현'){S.me.name='이명현';S.me.score=39.9;S.items.forEach(function(i){if(i.owner==='김하늘')i.owner='이명현';if(i.borrower==='김하늘')i.borrower='이명현'})}
+S.me.cls=g1(S.me.cls).replace(/\d+반/,'1반');
+var NAMEMAP={'김서준':'김시후','이서연':'이태윤','정민호':'정시우','박지우':'박우진','최유나':'탁요셉','한도현':'오지호'};
+S.students=seed().students;S.people={};
+S.items.forEach(function(i){if(NAMEMAP[i.owner])i.owner=NAMEMAP[i.owner];if(NAMEMAP[i.borrower])i.borrower=NAMEMAP[i.borrower]});
+S.items.forEach(function(i){if(i.id==='i3'&&i.status==='borrowed'&&!i.at){i.at=Date.now()-3600000;i.due=new Date(Date.now()+5*3600000).toISOString()}});S.reports=S.reports||[];S.claims=S.claims||[];S.students=S.students||seed().students;
+seed().found.forEach(function(f){if(!S.found.some(function(x){return x.id===f.id}))S.found.push(f)});
+
+var ui={role:'student',roster:false,report:null,cal:{y:new Date().getFullYear(),m:new Date().getMonth()},formOpen:false,rfOpen:false,rf:{target:'',item:'',reasons:[],detail:''},scrollTo:null,tab:'home',fac:'music',date:ymd(new Date()),sel:null,len:1,n:1,purpose:'',cat:'전체',fcat:'전체',q:'',bell:false,claim:null,nfOpen:false,ffOpen:false,
+  nf:{title:'',cat:'충전기',desc:''},ff:{photo:null,color:'#8a8a8a',cname:'회색',cat:'기타',place:'체육관',store:'office',title:'',q:'',a:'',rec:''},err:''};
+
+function toast(m){var t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(function(){t.hidden=true},2600)}
+function adjust(d,why){S.me.score=Math.max(0,Math.min(99,Math.round((S.me.score+d)*10)/10));S.log.unshift({t:Date.now(),d:d,why:why});S.log=S.log.slice(0,20);syncMe()}
+function note(text){S.notes.unshift({id:'n'+Date.now()+Math.random().toString(36).slice(2,5),text:text,t:Date.now(),read:false})}
+function lvl(s){return s<20?['이용 제한','bad']:s<30?['대여 제한','warn']:s>=40?['우수','ok']:['일반','info']}
+function fac(id){id=FAC_ALIAS[id]||id;return FAC.filter(function(f){return f.id===id})[0]||{id:id,name:'(없어진 장소)',cap:1,approval:'teacher',loc:'-'}}
+var ACTIVE=['confirmed','pending','checked'];
+var DB=null,DBK=null,MY_ID=null,MY_NAME='';
+function BK(){return DBK||S.bookings}
+function isMine(b){return DB?(!!MY_ID&&b.uid===MY_ID):!!b.mine}
+function getB(id){return BK().filter(function(x){return x.id===id})[0]}
+var RO=false;
+function failMsg(e){var c=e&&e.code;return c==='invalid_argument'?'저장 권한이 없어요. 공유 설정에서 이 계정을 Contributor(사용 가능) 이상으로 바꿔 주세요.':'저장하지 못했어요('+(c||'오류')+'). 잠시 후 다시 시도해 주세요.'}
+function dbFail(e){toast(failMsg(e))}
+function canWrite(){if(DB&&RO){toast('이 계정은 읽기 전용이라 저장할 수 없어요. 공유 설정에서 Contributor 이상으로 바꿔 주세요.');return false}return true}
+function dbPut(get,coll,id,patch,okMsg){
+  var ref=DB.doc(coll+'/'+id),cur=get(id),undo=null;
+  if(cur){var old={};Object.keys(patch).forEach(function(k){old[k]=cur[k]});Object.assign(cur,patch);
+    undo=function(){Object.keys(old).forEach(function(k){if(old[k]===undefined)delete cur[k];else cur[k]=old[k]})}}
+  var ok=function(){if(okMsg)toast(okMsg)};
+  var fail=function(e){if(undo)undo();dbFail(e);render()};
+  ref.update(patch).then(ok,function(e){
+    if(cur&&e&&e.code==='invalid_argument'){ref.set(Object.assign({},cur)).then(ok,fail)}else fail(e)});
+}
+function addB(b){
+  if(DB){var o=Object.assign({},b);delete o.mine;o.uid=MY_ID;o.t=Date.now();DB.doc('bookings/'+b.id).set(o).catch(dbFail)}
+  else S.bookings.push(b)}
+function patchB(id,patch,okMsg){
+  if(DB){dbPut(getB,'bookings',id,patch,okMsg)}
+  else{var b=getB(id);if(b)Object.assign(b,patch);if(okMsg)toast(okMsg)}}
+function Coll(name){return{
+  arr:null,
+  all:function(){return this.arr||S[name]},
+  get:function(id){return this.all().filter(function(x){return x.id===id})[0]},
+  add:function(o){if(DB){DB.doc(name+'/'+o.id).set(Object.assign({},o,{t:Date.now()})).catch(dbFail)}else{o.t=Date.now();S[name].push(o)}},
+  patch:function(id,p,okMsg){var me=this;if(DB){dbPut(function(i){return me.get(i)},name,id,p,okMsg)}else{var x=this.get(id);if(x)Object.assign(x,p);if(okMsg)toast(okMsg)}}
+}}
+var STU=Coll('students'),RP=Coll('reports'),CL=Coll('claims');
+var syncT=null,meDone=false;
+function syncMe(){
+  if(!DB||!MY_ID)return;clearTimeout(syncT);
+  syncT=setTimeout(function(){syncT=null;DB.doc('students/'+MY_ID).set({name:MY_NAME||S.me.name,cls:g1(S.me.cls),score:S.me.score,real:true,t:Date.now()}).catch(function(){})},500)}
+function g1(c){return String(c||'').replace(/\d+\s*학년/,'1학년')}
+function ROSTER(){
+  var a=STU.all().map(function(x){return Object.assign({},x,{cls:g1(x.cls),me:!!MY_ID&&x.id===MY_ID})});
+  if(!DB||(MY_ID&&!a.some(function(x){return x.me})))a.push({id:'me',name:S.me.name,cls:S.me.cls,score:S.me.score,me:true});
+  return a}
+function scoreOf(name){
+  var r=ROSTER().filter(function(x){return x.name===name})[0];
+  if(r)return r.score;return S.people[name]||S.me.score}
+function penalize(name,d,why){
+  if(name===S.me.name||(MY_NAME&&name===MY_NAME)){adjust(d,why);return S.me.score}
+  var st=ROSTER().filter(function(x){return x.name===name&&!x.me})[0];
+  var cur=st?st.score:(S.people[name]||36.5),nv=Math.max(0,Math.round((cur+d)*10)/10);
+  if(st)STU.patch(st.id,{score:nv});else S.people[name]=nv;
+  return nv}
+function used(f,date,h){return BK().reduce(function(a,b){return a+(fac(b.fac).id===f&&b.date===date&&ACTIVE.indexOf(b.status)>-1&&b.hour<=h&&h<b.hour+b.len?b.n:0)},0)}
+function hasPending(f,date,h){return BK().some(function(b){return fac(b.fac).id===f&&b.date===date&&b.status==='pending'&&b.hour<=h&&h<b.hour+b.len})}
+function myBooked(f,date,h){return BK().some(function(b){return isMine(b)&&fac(b.fac).id===f&&b.date===date&&ACTIVE.indexOf(b.status)>-1&&b.hour<=h&&h<b.hour+b.len})}
+
+function sweep(){
+  var now=Date.now(),ch=false;
+  BK().slice().forEach(function(b){
+    if(!isMine(b))return;
+    if(b.status==='confirmed'&&startAt(b).getTime()+10*60000<now){patchB(b.id,{status:'noshow'});adjust(-3,'노쇼: '+fac(b.fac).name);note('체크인이 없어 '+fac(b.fac).name+' 예약이 해제되고 매너온도 -3.0이 반영됐어요.');ch=true}
+    else if(b.status==='pending'&&startAt(b).getTime()<now){patchB(b.id,{status:'cancelled'});ch=true}
+    else if(b.status==='checked'&&endAt(b).getTime()<now){patchB(b.id,{status:'done'});ch=true}
+  });
+  if(ch)save();return ch;
+}
+
+/* ---------- views ---------- */
+function badge(){var n=S.notes.filter(function(x){return !x.read}).length;return n}
+function renderChrome(){
+  $('#r-student').setAttribute('aria-pressed',ui.role==='student');$('#r-teacher').setAttribute('aria-pressed',ui.role==='teacher');
+  var n=badge();$('#bell').innerHTML='알림'+(n?'<b>'+n+'</b>':'');
+  $('#notes').innerHTML=ui.bell?'<div class="notes"><div class="row" style="justify-content:space-between"><b>알림</b><button class="btn sm" data-act="readall">모두 읽음</button></div><ul>'+(S.notes.slice(0,8).map(function(x){return '<li>'+(x.read?'':'<span class="pill info">새 알림</span> ')+esc(x.text)+'<div class="muted small">'+ago(x.t)+'</div></li>'}).join('')||'<li class="muted">알림이 없어요.</li>')+'</ul></div>':'';
+  document.querySelectorAll('#tabs button').forEach(function(b){if(b.dataset.v===ui.tab)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
+  $('#demo').checked=!!S.demo;
+  var pc=BK().filter(function(b){return b.status==='pending'}).length;
+  var sb=document.querySelector('#tabs [data-v="space"]');
+  if(sb)sb.innerHTML='공간 예약'+(ui.role==='teacher'&&pc?' <b class="badge">'+pc+'</b>':'');
+  var cc=CL.all().filter(function(c){return c.status==='pending'}).length;
+  var rc=RP.all().filter(function(r){return r.status==='pending'}).length;
+  var ib=document.querySelector('#tabs [data-v="items"]');
+  if(ib)ib.innerHTML='물품 대여'+(ui.role==='teacher'&&rc?' <b class="badge">'+rc+'</b>':'');
+  var fb=document.querySelector('#tabs [data-v="found"]');
+  if(fb)fb.innerHTML='분실물'+(ui.role==='teacher'&&cc?' <b class="badge">'+cc+'</b>':'');
+}
+function render(){
+  renderChrome();
+  var V={home:vHome,space:vSpace,items:vItems,found:vFound,spec:vSpec};
+  $('#view').innerHTML=V[ui.tab]();
+  if(ui.scrollTo){var sc=document.getElementById&&document.getElementById(ui.scrollTo);ui.scrollTo=null;if(sc&&sc.scrollIntoView)sc.scrollIntoView({block:'start'})}
+  if(ui.tab==='found')renderFoundList();
+  renderModal();
+}
+
+function myUpcoming(){
+  return BK().filter(function(b){return isMine(b)&&['confirmed','pending','checked'].indexOf(b.status)>-1&&endAt(b).getTime()>Date.now()})
+    .sort(function(a,b){return startAt(a)-startAt(b)});
+}
+function bookingRow(b,withActions){
+  var f=fac(b.fac),s=ST[b.status],st=startAt(b),today=b.date===ymd(new Date());
+  var dl=today?'오늘':(b.date.slice(5).replace('-','/')+'('+DOW[st.getDay()]+')');
+  var act='';
+  if(withActions&&isMine(b)){
+    if(b.status==='confirmed'){
+      act='<button class="btn sm primary" data-act="checkin" data-id="'+b.id+'">체크인</button>';
+      if(S.demo)act+='<button class="btn sm danger" data-act="noshow" data-id="'+b.id+'">노쇼 처리(데모)</button>';
+    }
+    if(b.status==='confirmed'||b.status==='pending')act+='<button class="btn sm" data-act="cancel" data-id="'+b.id+'">취소</button>';
+  }
+  return '<div class="li"><div class="grow"><b>'+esc(f.name)+'</b> <span class="pill '+s[1]+'">'+s[0]+'</span><div class="muted small">'+dl+' <span class="mono">'+pad(b.hour)+':00–'+pad(b.hour+b.len)+':00</span> · '+b.n+'명 · '+esc(b.purpose)+(isMine(b)?'':' · '+esc(b.who))+'</div></div><div class="row">'+act+'</div></div>';
+}
+
+var RS=[['damage','물건 파손',-5],['unreturned','미반납·분실',-10],['late','반납 기한 지남(연체)',-1],['noshow','약속 불이행(나타나지 않음)',-3],['mismatch','물건 상태가 설명과 다름',-2],['rude','불쾌한 말이나 행동',-3],['theft','도난이 의심됨',0],['etc','기타',0]];
+function rsOf(k){return RS.filter(function(r){return r[0]===k})[0]}
+function reportForm(){
+  var names=ROSTER().filter(function(x){return !x.me}).map(function(x){return x.name}),rf=ui.rf;
+  if(names.indexOf(rf.target)<0)rf.target=names[0]||'';
+  return '<div class="card pop stack" style="gap:12px"><h3>신고하기</h3><p class="small muted">신고하면 교사에게 전달되고, 교사가 확인한 뒤에 매너온도가 조정돼요. 사실이 아닌 신고는 불이익이 있을 수 있어요.</p>'+
+   '<div class="grid2"><label class="f">신고할 학생<select data-ui="rf.target">'+names.map(function(n){return '<option '+(rf.target===n?'selected':'')+'>'+esc(n)+'</option>'}).join('')+'</select></label>'+
+   '<label class="f">관련 물품 (선택)<select data-ui="rf.item"><option value="">선택 안 함</option>'+S.items.map(function(i){return '<option value="'+i.id+'" '+(rf.item===i.id?'selected':'')+'>'+esc(i.title)+'</option>'}).join('')+'</select></label></div>'+
+   '<fieldset class="chkset"><legend>신고 사유 (해당하는 것을 모두 체크)</legend>'+RS.map(function(r){return '<label class="chk"><input type="checkbox" data-act="rfreason" data-v="'+r[0]+'" '+(rf.reasons.indexOf(r[0])>-1?'checked':'')+'><span>'+r[1]+'</span></label>'}).join('')+'</fieldset>'+
+   '<label class="f">자세한 내용<textarea data-ui="rf.detail" maxlength="200" placeholder="언제, 어디서, 어떤 일이 있었는지 적어 주세요.">'+esc(rf.detail)+'</textarea></label>'+
+   (ui.err?'<div class="err" role="alert">'+esc(ui.err)+'</div>':'')+'<div class="row"><button class="btn danger" data-act="rfsave">신고 접수</button><button class="btn" data-act="rfopen">닫기</button></div></div>';
+}
+function reportQueue(){
+  var q=RP.all().filter(function(r){return r.status==='pending'}).sort(function(a,b){return (a.t||0)-(b.t||0)});
+  if(!q.length)return '';
+  return '<div class="card pop" style="border-color:var(--bad)"><div class="row" style="justify-content:space-between"><h3>신고 확인 대기 ('+q.length+')</h3><span class="pill bad">확인 필요</span></div><div class="list" style="margin-top:6px">'+q.map(function(r){
+    return '<div class="li"><div class="grow"><b>'+esc(r.targetName)+'</b> 님 · 현재 <span class="mono">'+scoreOf(r.targetName).toFixed(1)+'°</span><div class="chips" style="margin:4px 0;gap:5px">'+(r.reasons||[]).map(function(x){return '<span class="pill bad">'+esc(x)+'</span>'}).join('')+'</div>'+(r.detail?'<div class="small">“'+esc(r.detail)+'”</div>':'')+'<div class="muted small">관련 물품: '+esc(r.itemTitle)+' · 신고자 '+esc(r.reporter)+' · '+ago(r.t||Date.now())+'</div></div><div class="row"><button class="btn sm primary" data-act="rpok" data-id="'+r.id+'">'+(r.suggested?'확인 · 감점 적용 ('+r.suggested.toFixed(1)+')':'확인 완료')+'</button><button class="btn sm" data-act="rpno" data-id="'+r.id+'">기각</button></div></div>'}).join('')+'</div></div>';
+}
+function rosterCard(){
+  var r=ROSTER().slice().sort(function(a,b){return a.score-b.score});
+  var avg=r.length?r.reduce(function(a,x){return a+x.score},0)/r.length:0;
+  var lim=r.filter(function(x){return x.score<30}).length;
+  var head='<button class="rosterhead" data-act="roster" aria-expanded="'+ui.roster+'"><div><h3>학생 매너온도</h3><div class="muted small" style="margin-top:2px">학생 '+r.length+'명 · 평균 <b class="mono">'+avg.toFixed(1)+'°</b> · 이용 제한 대상 '+lim+'명</div><div class="small" style="margin-top:6px;color:var(--accent);font-weight:600">'+(ui.roster?'눌러서 접기':'눌러서 학생별 매너온도 보기')+'</div></div><span class="chev" aria-hidden="true">▾</span></button>';
+  var list='';
+  if(ui.roster){list='<div class="list" style="margin-top:10px;max-height:440px;overflow-y:auto;padding-right:4px">'+(r.length?r.map(function(x){var l=lvl(x.score);
+    return '<div class="li"><div class="grow"><b>'+esc(x.name)+'</b>'+'<div class="muted small">'+esc(x.cls||'')+'</div></div><div class="row" style="gap:8px;flex-wrap:nowrap"><span class="mini '+(l[1]==='bad'||l[1]==='warn'?l[1]:'')+'" aria-hidden="true"><i style="width:'+Math.min(100,x.score/50*100)+'%"></i></span><b class="mono" style="min-width:52px;text-align:right">'+x.score.toFixed(1)+'°</b><span class="pill '+l[1]+'">'+l[0]+'</span></div></div>'}).join(''):'<p class="muted" style="padding:10px 0">학생 정보가 아직 없어요.</p>')+'<p class="small muted" style="padding-top:8px">낮은 순으로 정렬돼요. 30 미만은 대여, 20 미만은 예약이 제한돼요.</p></div>'}
+  return '<div class="card pop">'+head+list+'</div>';
+}
+function claimCard(){
+  var q=CL.all().filter(function(c){return c.status==='pending'}).sort(function(a,b){return (a.t||0)-(b.t||0)});
+  if(!q.length)return '';
+  return '<div class="card pop" style="border-color:var(--accent)"><div class="row" style="justify-content:space-between"><h3>물건의 주인이 나타났어요 ('+q.length+')</h3><span class="pill info">확인 필요</span></div><div class="list" style="margin-top:6px">'+q.map(function(c){return '<div class="li"><div class="grow"><b>'+esc(c.title)+'</b> <span class="pill '+(c.note?'info':'')+'">'+(c.note?'특징 설명 있음':'설명 없음')+'</span>'+(c.note?'<div class="small" style="margin-top:2px">“'+esc(c.note)+'”</div>':'')+'<div class="muted small">'+esc(c.claimant)+' 님이 내 물건이라고 요청 · '+esc(c.place)+' · '+FSTORE[c.store]+' · '+ago(c.t||Date.now())+'</div></div><div class="row"><button class="btn sm primary" data-act="claimok" data-id="'+c.id+'">인계 확인</button><button class="btn sm danger" data-act="claimno" data-id="'+c.id+'">주인 아님</button></div></div>'}).join('')+'</div></div>';
+}
+var RK={damage:'파손 신고',lost:'미반납 신고'};
+function reportCard(){
+  var r=RP.all().filter(function(x){return x.status!=='pending'}).sort(function(a,b){return (b.t||0)-(a.t||0)}).slice(0,6);
+  return '<div class="card"><h3>신고 처리 내역</h3><div class="list" style="margin-top:6px">'+(r.length?r.map(function(x){
+    var dis=x.status==='dismissed',why=(x.reasons&&x.reasons.length)?x.reasons.join(', '):(RK[x.kind]||'신고');
+    return '<div class="li"><div class="grow"><b>'+esc(x.targetName)+'</b> 님 <span class="pill '+(dis?'':'bad')+'">'+(dis?'기각':'감점 반영')+'</span><div class="muted small">'+esc(why)+' · '+esc(x.itemTitle)+' · 신고자 '+esc(x.reporter)+' · '+ago(x.t||Date.now())+'</div></div>'+
+    (dis||x.before==null?'<div class="small muted">'+(dis?'감점 없음':'확인 완료')+'</div>':'<div class="small mono" style="text-align:right">'+x.before.toFixed(1)+'° → <b style="color:var(--bad)">'+x.after.toFixed(1)+'°</b><div class="muted">'+(x.delta||0).toFixed(1)+'</div></div>')+'</div>'}).join(''):'<p class="muted" style="padding:10px 0">처리한 신고가 없어요.</p>')+'</div></div>';
+}
+function vTeacherHome(){
+  var pend=BK().filter(function(b){return b.status==='pending'}).sort(function(a,b){return (a.t||0)-(b.t||0)});
+  var pc='<div class="card pop"><div class="row" style="justify-content:space-between"><h3>예약 승인 대기 ('+pend.length+')</h3>'+(pend.length?'<span class="pill warn">처리 필요</span>':'')+'</div><div class="list" style="margin-top:6px">'+(pend.length?pend.map(function(b){return '<div class="li"><div class="grow"><b>'+esc(fac(b.fac).name)+'</b> · '+esc(b.who)+'<div class="muted small">'+b.date.slice(5).replace('-','/')+' <span class="mono">'+pad(b.hour)+':00–'+pad(b.hour+b.len)+':00</span> · '+b.n+'명 · '+esc(b.purpose)+'</div></div><div class="row"><button class="btn sm primary" data-act="approve" data-id="'+b.id+'">승인</button><button class="btn sm danger" data-act="reject" data-id="'+b.id+'">반려</button></div></div>'}).join(''):'<p class="muted" style="padding:10px 0">처리할 요청이 없어요. 학생이 요청하면 여기에 바로 나타나요.</p>')+'</div></div>';
+  return '<div class="stack"><div class="hero">'+rosterCard()+'<div class="stack">'+pc+claimCard()+reportQueue()+'</div></div>'+reportCard()+'<div class="quick"><button data-act="tab" data-v="space">공간 예약 현황<span>시설별 시간표 보기</span></button><button data-act="tab" data-v="items">물품 대여<span>대여·신고 현황</span></button><button data-act="tab" data-v="found">분실물 센터<span>보관 중인 습득물</span></button></div></div>';
+}
+function vHome(){
+  if(ui.role==='teacher')return vTeacherHome();
+  var s=S.me.score,l=lvl(s),pct=Math.min(100,s/50*100);
+  var up=myUpcoming().slice(0,3);
+  var loans=S.items.filter(function(i){return i.status==='borrowed'&&i.borrower===S.me.name});
+  var lent=S.items.filter(function(i){return i.status==='borrowed'&&i.owner===S.me.name});
+  var fresh=S.found.filter(function(f){return f.state==='open'&&Date.now()-f.t<48*3600000}).length;
+  var pend=BK().filter(function(b){return b.status==='pending'}).length;
+  var teacherBox=ui.role==='teacher'?'<div class="card pop"><h3>교사 확인 필요</h3><p class="muted small" style="margin-top:4px">승인 대기 중인 공간 예약이 <b>'+pend+'건</b> 있어요.</p><div style="margin-top:10px"><button class="btn primary" data-act="tab" data-v="space">승인 대기 보기</button></div></div>':'';
+  return '<div class="stack">'+
+   '<div class="hero"><div class="card pop"><div class="row" style="justify-content:space-between"><span class="muted small">'+esc(S.me.cls)+' · '+esc(S.me.name)+(ui.role==='teacher'?' (교사 화면 미리보기)':'')+'</span><span class="pill '+l[1]+'">'+l[0]+'</span></div>'+
+   '<div class="row" style="align-items:baseline;margin-top:8px"><div class="score mono">'+s.toFixed(1)+'</div><div class="muted">° 매너온도</div></div>'+
+   '<div class="thermo" aria-hidden="true"><i style="width:'+pct+'%"></i><s style="left:40%"></s><s style="left:60%"></s><s style="left:80%"></s></div>'+
+   '<div class="thermo-l" aria-hidden="true"><span style="left:40%">20</span><span style="left:60%">30</span><span style="left:80%">40</span></div>'+
+   '<p class="small muted" style="margin-top:8px">20 미만 예약 제한 · 30 미만 대여 제한 · 모든 공간 예약은 교사 승인 후 확정</p>'+
+   (S.log.length?'<div class="small" style="margin-top:8px">최근: '+S.log.slice(0,2).map(function(x){return esc(x.why)+' <b class="mono" style="color:var(--'+(x.d>0?'ok':'bad')+')">'+(x.d>0?'+':'')+x.d.toFixed(1)+'</b>'}).join(' · ')+'</div>':'')+
+   '</div><div class="stack">'+teacherBox+
+   '<div class="card"><h3>다가오는 예약</h3><div class="list" style="margin-top:6px">'+(up.length?up.map(function(b){return bookingRow(b,false)}).join(''):'<p class="muted" style="padding:10px 0">예정된 예약이 없어요.</p>')+'</div></div></div></div>'+
+   '<div class="quick"><button data-act="tab" data-v="space">공간 예약<span>오늘 빈 시간 확인</span></button><button data-act="tab" data-v="items">물품 대여<span>충전기·체육복·우산</span></button><button data-act="tab" data-v="found">분실물 센터<span>새 습득물 '+fresh+'건</span></button></div>'+
+   '<div class="grid2"><div class="card"><h3>내가 빌린 물건</h3><div class="list" style="margin-top:6px">'+(loans.length?loans.map(function(i){var late=new Date(i.due)<new Date();return '<div class="li"><div class="grow"><b>'+esc(i.title)+'</b><div class="small '+(late?'':'muted')+'" style="'+(late?'color:var(--bad)':'')+'">반납 기한 <span class="mono">'+hm(i.due)+'</span>'+(late?' · 기한 지남':'')+'</div></div>'+retBtn(i,'반납')+'</div>'}).join(''):'<p class="muted" style="padding:10px 0">빌린 물건이 없어요.</p>')+'</div></div>'+
+   '<div class="card"><h3>내가 빌려준 물건</h3><div class="list" style="margin-top:6px">'+(lent.length?lent.map(function(i){var late=new Date(i.due)<new Date();return '<div class="li"><div class="grow"><b>'+esc(i.title)+'</b><div class="small muted">'+esc(i.borrower)+' · 기한 <span class="mono">'+hm(i.due)+'</span>'+(late?' <span class="pill bad">연체</span>':'')+'</div></div></div>'}).join(''):'<p class="muted" style="padding:10px 0">빌려준 물건이 없어요.</p>')+'</div></div></div>'+
+  '</div>';
+}
+
+function dayChips(){
+  var out='',t=new Date();
+  for(var i=0;i<7;i++){var x=new Date(t);x.setDate(t.getDate()+i);var k=ymd(x);
+    out+='<button class="chip day" data-act="date" data-v="'+k+'" aria-pressed="'+(ui.date===k)+'"><small>'+(i===0?'오늘':DOW[x.getDay()])+'</small>'+(x.getMonth()+1)+'/'+x.getDate()+'</button>'}
+  return out;
+}
+function slotRows(f){
+  var now=new Date(),isToday=ui.date===ymd(now),out='',any=false;
+  for(var h=8;h<20;h++){
+    var u=used(f.id,ui.date,h),past=isToday&&h<=now.getHours(),full=u>=f.cap,pend=hasPending(f.id,ui.date,h),mine=myBooked(f.id,ui.date,h);
+    var dis=past||full;if(!dis)any=true;
+    var cls='slot'+(full?' full':'')+(pend&&!full?' pend':'')+(mine?' mine':'')+(ui.sel===h?' sel':'');
+    var label=past?'지남':full?'마감':mine?'내 예약':pend?'승인 대기 포함':'예약 가능';
+    out+='<button class="'+cls+'" data-act="slot" data-v="'+h+'" '+(dis?'disabled':'')+' aria-pressed="'+(ui.sel===h)+'"><span class="mono"><b>'+pad(h)+':00</b></span><span class="bar" aria-hidden="true"><i style="width:'+Math.min(100,u/f.cap*100)+'%"></i></span><span class="cnt"><span class="mono">'+u+'/'+f.cap+'명</span><br><span class="muted" style="font-size:12px">'+label+'</span></span></button>';
+  }
+  return {html:out,any:any};
+}
+function bookPanel(f){
+  if(ui.sel==null)return '<div class="card muted">위 시간표에서 시작 시간을 눌러 주세요. 막대는 현재 신청 인원이에요.</div>';
+  var maxLen=20-ui.sel,len=Math.min(ui.len,maxLen),rem=f.cap;
+  for(var h=ui.sel;h<ui.sel+len;h++)rem=Math.min(rem,f.cap-used(f.id,ui.date,h));
+  var opts='';for(var i=1;i<=maxLen;i++)opts+='<option value="'+i+'" '+(i===len?'selected':'')+'>'+i+'시간 ('+pad(ui.sel)+':00–'+pad(ui.sel+i)+':00)</option>';
+  var who='교사 승인 후 확정';
+  return '<div class="card pop stack" id="bookpanel" style="gap:12px"><h3>'+esc(f.name)+' '+pad(ui.sel)+':00 예약</h3>'+
+   '<div class="grid2"><label class="f">이용 시간<select data-ui="len" data-num="1">'+opts+'</select></label>'+
+   '<label class="f">이용 인원 (남은 자리 '+rem+'명, 최대 '+f.cap+'명)<input type="number" min="1" max="'+rem+'" value="'+ui.n+'" data-ui="n" data-num="1" inputmode="numeric"></label></div>'+
+   '<label class="f">사용 목적<input type="text" value="'+esc(ui.purpose)+'" data-ui="purpose" placeholder="예: 동아리 합주, 발표 연습" maxlength="40"></label>'+
+   (ui.err?'<div class="err" role="alert">'+esc(ui.err)+'</div>':'')+
+   '<div class="row" style="justify-content:space-between"><span class="pill warn">'+who+'</span><button class="btn primary" data-act="book">예약 신청</button></div>'+
+   '<p class="small muted">시작 10분 전~10분 후까지 체크인하지 않으면 자동 해제되고 매너온도가 3.0 내려가요.</p></div>';
+}
+function dayItems(k){return BK().filter(function(b){return b.date===k&&ACTIVE.indexOf(b.status)>-1})}
+function calCard(){
+  var c=ui.cal,now=new Date(),todayK=ymd(now),maxK=ymd(new Date(now.getFullYear(),now.getMonth(),now.getDate()+90));
+  var dim=new Date(c.y,c.m+1,0).getDate(),lead=new Date(c.y,c.m,1).getDay();
+  var canPrev=!(c.y===now.getFullYear()&&c.m===now.getMonth()),canNext=ymd(new Date(c.y,c.m+1,1))<=maxK;
+  var teacher=ui.role==='teacher',cells='';
+  DOW.forEach(function(w){cells+='<span class="dow">'+w+'</span>'});
+  for(var i=0;i<lead;i++)cells+='<span></span>';
+  for(var d=1;d<=dim;d++){
+    var k=ymd(new Date(c.y,c.m,d)),dis=k<todayK||k>maxK,li=dayItems(k),mark='',on=ui.formOpen&&k===ui.date;
+    if(teacher){var pn=li.filter(function(b){return b.status==='pending'}).length;mark=li.length?'<span class="cnt'+(pn?' pend':'')+'">'+li.length+'건</span>':''}
+    else{var mm=li.filter(isMine);mark=mm.length?'<span class="dot'+(mm.some(function(b){return b.status==='pending'})?' pend':'')+'"></span>':''}
+    cells+='<button class="day'+(k===todayK?' today':'')+(on?' sel':'')+'" data-act="date" data-v="'+k+'" '+(dis?'disabled':'')+' aria-label="'+(c.m+1)+'월 '+d+'일" aria-pressed="'+on+'"><b>'+d+'</b>'+mark+'</button>';
+  }
+  return '<div class="card pop"><div class="calhead"><button class="btn sm" data-act="calprev" '+(canPrev?'':'disabled')+' aria-label="이전 달">◀</button><h3>'+c.y+'년 '+(c.m+1)+'월</h3><button class="btn sm" data-act="calnext" '+(canNext?'':'disabled')+' aria-label="다음 달">▶</button></div><div class="cal">'+cells+'</div>'+
+   '<p class="small muted" style="margin-top:10px">'+(teacher?'숫자는 그날의 예약 건수예요. 주황색은 승인 대기가 있는 날이에요.':'<span class="dot" style="display:inline-block"></span> 내 예약 · <span class="dot pend" style="display:inline-block"></span> 승인 대기 · 오늘부터 90일 뒤까지 예약할 수 있어요.')+'</p></div>';
+}
+function bookForm(){
+  if(!ui.formOpen)return '<div class="card muted">달력에서 날짜를 눌러 예약을 시작하세요. 날짜를 고르면 장소, 시간, 인원, 사유를 적을 수 있어요.</div>';
+  var f=fac(ui.fac),r=slotRows(f),dt=new Date(ui.date+'T00:00:00');
+  return '<div class="stack"><div class="card stack" style="gap:14px"><div class="row" style="justify-content:space-between"><h3>'+(dt.getMonth()+1)+'월 '+dt.getDate()+'일('+DOW[dt.getDay()]+') 예약 신청</h3><button class="btn sm" data-act="closeform">닫기</button></div>'+
+   '<div><div class="small muted" style="margin-bottom:6px;font-weight:600">1. 장소</div><div class="chips" role="group" aria-label="장소 선택">'+FAC.map(function(x){return '<button class="chip" data-act="fac" data-v="'+x.id+'" aria-pressed="'+(x.id===ui.fac)+'">'+x.name+'</button>'}).join('')+'</div><p class="small muted" style="margin-top:6px">'+esc(f.loc)+' · 수용 '+f.cap+'명 · '+APPR[f.approval]+'</p></div>'+
+   '<div><div class="small muted" style="margin-bottom:6px;font-weight:600">2. 시작 시간</div>'+(r.any?'':'<p class="muted small" style="margin-bottom:8px">이 날은 예약 가능한 시간이 없어요. 다른 날짜나 장소를 골라 보세요.</p>')+r.html+'</div></div>'+bookPanel(f)+'</div>';
+}
+function dayPanel(){
+  if(!ui.formOpen)return '<div class="card muted">달력에서 날짜를 누르면 그날의 예약 내역을 볼 수 있어요.</div>';
+  var dt=new Date(ui.date+'T00:00:00');
+  var list=BK().filter(function(b){return b.date===ui.date&&b.status!=='cancelled'}).sort(function(a,b){return a.hour-b.hour||(a.t||0)-(b.t||0)});
+  return '<div class="card stack" style="gap:6px"><div class="row" style="justify-content:space-between"><h3>'+(dt.getMonth()+1)+'월 '+dt.getDate()+'일('+DOW[dt.getDay()]+') 예약 내역 ('+list.length+')</h3><button class="btn sm" data-act="closeform">닫기</button></div><div class="list">'+
+   (list.length?list.map(function(b){var st=ST[b.status]||['',''],act='';
+     if(b.status==='pending')act='<button class="btn sm primary" data-act="approve" data-id="'+b.id+'">승인</button><button class="btn sm danger" data-act="reject" data-id="'+b.id+'">반려</button>';
+     else if(b.status==='confirmed')act='<button class="btn sm danger" data-act="tcancel" data-id="'+b.id+'">예약 취소</button>';
+     return '<div class="li"><div class="grow"><b>'+esc(fac(b.fac).name)+'</b> <span class="pill '+st[1]+'">'+st[0]+'</span><div class="muted small"><span class="mono">'+pad(b.hour)+':00–'+pad(b.hour+b.len)+':00</span> · '+b.n+'명 · '+esc(b.purpose)+' · 신청 '+esc(b.who)+'</div></div><div class="row">'+act+'</div></div>'}).join(''):'<p class="muted" style="padding:10px 0">이 날은 예약이 없어요.</p>')+'</div></div>';
+}
+function vSpace(){
+  var teacher=ui.role==='teacher';
+  var mine=BK().filter(function(b){return isMine(b)&&b.status!=='cancelled'}).sort(function(a,b){return startAt(b)-startAt(a)}).slice(0,6);
+  var queue=BK().filter(function(b){return b.status==='pending'}).sort(function(a,b){return (a.t||0)-(b.t||0)});
+  var tq=teacher?'<div class="card pop"><h3>승인 대기 ('+queue.length+')</h3><div class="list" style="margin-top:6px">'+(queue.length?queue.map(function(b){return '<div class="li"><div class="grow"><b>'+esc(fac(b.fac).name)+'</b> · '+esc(b.who)+'<div class="muted small">'+b.date.slice(5).replace('-','/')+' <span class="mono">'+pad(b.hour)+':00–'+pad(b.hour+b.len)+':00</span> · '+b.n+'명 · '+esc(b.purpose)+'</div></div><div class="row"><button class="btn sm primary" data-act="approve" data-id="'+b.id+'">승인</button><button class="btn sm danger" data-act="reject" data-id="'+b.id+'">반려</button></div></div>'}).join(''):'<p class="muted" style="padding:10px 0">처리할 요청이 없어요.</p>')+'</div></div>':'';
+  return '<div class="stack">'+tq+'<div><h2>공간 예약</h2><p class="muted small">'+(teacher?'날짜를 누르면 그날의 예약을 모두 확인하고 승인하거나 취소할 수 있어요.':'모든 공간은 교사가 승인해야 쓸 수 있어요. 날짜를 누른 뒤 장소·시간·인원·사유를 적어 신청하세요.')+'</p></div>'+
+   '<div class="grid2" style="align-items:start">'+calCard()+'<div id="dayside">'+(teacher?dayPanel():bookForm())+'</div></div>'+
+   (teacher?'':'<div class="card"><h3>내 예약</h3><div class="list" style="margin-top:6px">'+(mine.length?mine.map(function(b){return bookingRow(b,true)}).join(''):'<p class="muted" style="padding:10px 0">예약 내역이 없어요.</p>')+'</div></div>')+'</div>';
+}
+
+var MINLOAN=4*3600000;
+function retOpen(i){return !!S.demo||!i.at||Date.now()>=i.at+MINLOAN}
+function retBtn(i,label){
+  if(retOpen(i))return '<button class="btn sm primary" data-act="return" data-id="'+i.id+'">'+label+'</button>';
+  return '<button class="btn sm" data-act="return" data-id="'+i.id+'" aria-disabled="true" style="opacity:.6">반납 <span class="mono">'+hm(i.at+MINLOAN)+'</span> 이후</button>';
+}
+function itemCard(i){
+  var late=i.due&&new Date(i.due)<new Date(),pill='',btn='';
+  var isMine=i.owner===S.me.name,isBorrower=i.borrower===S.me.name;
+  if(i.status==='available'){pill='<span class="pill ok">대여 가능</span>';
+    btn=isMine?'<div class="row"><span class="muted small">내 물건</span>'+(S.demo?'<button class="btn sm" data-act="demoborrow" data-id="'+i.id+'">데모: 다른 학생이 대여</button>':'')+'</div>':'<div class="row"><select id="due-'+i.id+'" style="width:auto;min-height:36px;padding:4px 8px" aria-label="대여 시간"><option value="240" selected>4시간</option><option value="360">6시간</option><option value="480">8시간</option></select><button class="btn sm primary" data-act="borrow" data-id="'+i.id+'">대여 요청</button></div>'}
+  else if(i.status==='borrowed'){pill='<span class="pill '+(late?'bad':'warn')+'">'+(late?'연체 중':'대여 중')+'</span>';
+    if(isBorrower)btn=retBtn(i,'반납하기');
+    else if(isMine)btn='<div class="row"><button class="btn sm'+(retOpen(i)?' primary':'')+'" data-act="confirmret" data-id="'+i.id+'"'+(retOpen(i)?'':' aria-disabled="true" style="opacity:.6"')+'>반납 확인'+(retOpen(i)?'':' ('+hm(i.at+MINLOAN)+' 이후)')+'</button><button class="btn sm danger" data-act="damage" data-id="'+i.id+'">파손 신고</button><button class="btn sm danger" data-act="lostitem" data-id="'+i.id+'">미반납 신고</button></div>';
+    else btn='<span class="muted small mono">~'+hm(i.due)+'</span>'}
+  else if(i.status==='hold'){pill='<span class="pill bad">교사 중재 중</span>';if(ui.role==='teacher')btn='<button class="btn sm primary" data-act="releasehold" data-id="'+i.id+'">중재 완료 · 대여 재개</button>'}
+  else {pill='<span class="pill">대여 중단</span>'}
+  var sc=i.school?'<span class="pill info">학교 비치</span>':'<span class="muted small">'+esc(i.owner)+' · '+scoreOf(i.owner).toFixed(1)+'°</span>';
+  return '<div class="card stack" style="gap:8px"><div class="row" style="justify-content:space-between"><span class="pill">'+esc(i.cat)+'</span>'+pill+'</div><h3>'+esc(i.title)+'</h3><div>'+sc+'</div><p class="small muted">'+esc(i.desc)+'</p>'+(i.status==='borrowed'?'<p class="small">'+(isBorrower?'내가 대여 중':esc(i.borrower)+' 님 대여 중')+' · 기한 <span class="mono">'+hm(i.due)+'</span></p>':'')+'<div style="margin-top:auto">'+btn+'</div></div>';
+}
+function vItems(){
+  var list=S.items.filter(function(i){return ui.cat==='전체'||i.cat===ui.cat});
+  var form=ui.nfOpen?'<div class="card pop stack" style="gap:12px"><h3>내 물건 나눔 등록</h3><div class="grid2"><label class="f">물건 이름<input type="text" data-ui="nf.title" value="'+esc(ui.nf.title)+'" maxlength="30" placeholder="예: 우산(접이식)"></label><label class="f">종류<select data-ui="nf.cat">'+ICATS.map(function(c){return '<option '+(ui.nf.cat===c?'selected':'')+'>'+c+'</option>'}).join('')+'</select></label></div><label class="f">설명·상태<textarea data-ui="nf.desc" maxlength="80" placeholder="대여 가능한 시간대, 상태 등">'+esc(ui.nf.desc)+'</textarea></label>'+(ui.err?'<div class="err" role="alert">'+esc(ui.err)+'</div>':'')+'<div class="row"><button class="btn primary" data-act="nfsave">등록</button><button class="btn" data-act="nfopen">닫기</button></div><p class="small muted">귀금속·고가 전자기기·현금성 물품은 등록할 수 없어요.</p></div>':'';
+  return '<div class="stack"><div class="row" style="justify-content:space-between"><div><h2>물품 대여·나눔</h2><p class="muted small">급할 때 빌리고, 쓴 뒤에는 제때 돌려주세요. 대여 후 4시간이 지나야 반납할 수 있어요'+(S.demo?'(지금은 데모 모드라 바로 반납돼요)':'')+'. 정시 반납 +0.5, 연체 -1.0, 파손 -5.0, 미반납 -10.</p></div><div class="row">'+(ui.role==='teacher'?'':'<button class="btn danger" data-act="rfopen">신고하기</button>')+'<button class="btn primary" data-act="nfopen">내 물건 등록</button></div></div>'+(ui.role==='teacher'?reportQueue():'')+(ui.rfOpen?reportForm():'')+form+
+   '<div class="chips">'+['전체'].concat(ICATS).map(function(c){return '<button class="chip" data-act="icat" data-v="'+c+'" aria-pressed="'+(ui.cat===c)+'">'+c+'</button>'}).join('')+'</div>'+
+   '<div class="grid3">'+(list.map(itemCard).join('')||'<p class="muted">해당 종류의 물건이 없어요.</p>')+'</div></div>';
+}
+
+function vFound(){
+  var form=ui.ffOpen?foundForm():'';
+  var subs=S.alerts.map(function(k,i){return '<span class="pill info">'+esc(k)+' <button data-act="alertdel" data-v="'+i+'" aria-label="'+esc(k)+' 알림 삭제" style="border:0;background:none;color:inherit;padding:0 0 0 4px">×</button></span>'}).join(' ');
+  return '<div class="stack">'+(ui.role==='teacher'?claimCard():'')+'<div class="row" style="justify-content:space-between"><div><h2>분실물 센터</h2><p class="muted small">주운 물건은 사진 한 장으로 올리고, 잃어버린 물건은 검색하거나 알림을 걸어두세요.</p></div><button class="btn primary" data-act="ffopen">주웠어요 (사진 올리기)</button></div>'+form+
+   '<div class="card stack" style="gap:10px"><div class="row"><div class="grow"><input type="search" id="q" placeholder="찾는 물건 (예: 검정 우산, 이어폰, 체육관)" value="'+esc(ui.q)+'" data-ui="q" aria-label="분실물 검색"></div><button class="btn" data-act="alertadd">이 검색어로 알림 받기</button></div>'+
+   '<div class="row small"><span class="muted">내 알림 키워드</span> '+(subs||'<span class="muted">없음</span>')+'</div></div>'+
+   '<div class="chips">'+['전체'].concat(FCATS).map(function(c){return '<button class="chip" data-act="fcat" data-v="'+c+'" aria-pressed="'+(ui.fcat===c)+'">'+c+'</button>'}).join('')+'</div>'+
+   '<div class="grid3" id="foundList"></div></div>';
+}
+function foundForm(){
+  var f=ui.ff;
+  return '<div class="card pop stack" style="gap:12px"><h3>습득물 등록</h3>'+
+   '<label class="f">물건 사진<input type="file" id="photo" accept="image/*"></label>'+
+   (f.photo?'<div class="row" style="align-items:flex-start"><div class="thumb" style="width:140px"><img alt="올린 사진 미리보기" src="'+f.photo+'"></div><div class="small"><div><b>자동 인식</b> (데모)</div><div style="margin-top:4px"><span class="sw" style="background:'+f.color+'"></span>색상: <b>'+esc(f.cname)+'</b> <span class="muted">· 사진에서 추출</span></div>'+(f.rec?'<div class="muted" style="margin-top:2px">모양 비율로 보면 <b>'+esc(f.rec)+'</b>일 가능성이 있어요. 맞는지 확인해 주세요.</div>':'<div class="muted" style="margin-top:2px">종류는 직접 골라 주세요.</div>')+'</div></div>':'<p class="small muted">사진을 올리면 색상을 자동으로 읽고 제목을 만들어 줘요.</p>')+
+   '<div class="grid2"><label class="f">종류<select data-ui="ff.cat" data-rerender="1">'+FCATS.map(function(c){return '<option '+(f.cat===c?'selected':'')+'>'+c+'</option>'}).join('')+'</select></label>'+
+   '<label class="f">발견한 장소<select data-ui="ff.place">'+PLACES.map(function(c){return '<option '+(f.place===c?'selected':'')+'>'+c+'</option>'}).join('')+'</select></label></div>'+
+   '<div class="grid2"><label class="f">제목 (비워두면 자동 생성)<input type="text" data-ui="ff.title" value="'+esc(f.title)+'" maxlength="30" placeholder="'+esc(f.cname+' '+f.cat)+'"></label>'+
+   '<label class="f">보관 위치<select data-ui="ff.store">'+Object.keys(FSTORE).map(function(k){return '<option value="'+k+'" '+(f.store===k?'selected':'')+'>'+FSTORE[k]+'</option>'}).join('')+'</select></label></div>'+
+   (ui.err?'<div class="err" role="alert">'+esc(ui.err)+'</div>':'')+'<div class="row"><button class="btn primary" data-act="ffsave">게시하기</button><button class="btn" data-act="ffopen">닫기</button></div>'+
+   '<p class="small muted">데모에서는 색상만 사진에서 실제로 읽습니다. 주인 확인은 교사가 직접 해요. 실서비스에서는 이미지 인식 API로 종류·브랜드·특징까지 태깅합니다.</p></div>';
+}
+function renderFoundList(){
+  var q=ui.q.trim().toLowerCase();
+  var l=S.found.filter(function(f){
+    if(ui.fcat!=='전체'&&f.cat!==ui.fcat)return false;
+    if(!q)return true;
+    return (f.title+' '+f.cat+' '+f.cname+' '+f.place).toLowerCase().split(/\s+/).join(' ').indexOf(q)>-1||q.split(/\s+/).every(function(w){return (f.title+' '+f.cat+' '+f.cname+' '+f.place).toLowerCase().indexOf(w)>-1});
+  }).sort(function(a,b){return b.t-a.t});
+  $('#foundList').innerHTML=l.map(function(f){
+    var th=f.photo?'<img alt="'+esc(f.title)+' 사진" src="'+f.photo+'">':f.cat;
+    var dark=false;try{var c=f.color.replace('#','');dark=(parseInt(c.substr(0,2),16)*.3+parseInt(c.substr(2,2),16)*.6+parseInt(c.substr(4,2),16)*.1)<140}catch(e){}
+    return '<div class="card stack" style="gap:8px"><div class="thumb" style="background:'+f.color+';color:'+(dark?'#fff':'#14211F')+'">'+th+'</div><div class="row" style="justify-content:space-between"><h3>'+esc(f.title)+'</h3>'+(f.state==='claimed'?'<span class="pill ok">주인 찾음</span>':f.state==='claim_pending'?'<span class="pill warn">확인 대기</span>':'<span class="pill info">보관 중</span>')+'</div>'+
+     '<div class="chips"><span class="pill"><span class="sw" style="background:'+f.color+'"></span>'+esc(f.cname)+'</span><span class="pill">'+esc(f.cat)+'</span><span class="pill">'+esc(f.place)+'</span></div>'+
+     '<p class="small muted">'+ago(f.t)+' 발견 · '+FSTORE[f.store]+'</p>'+
+     (f.state==='open'?'<button class="btn sm primary" data-act="claim" data-id="'+f.id+'">내 물건이에요</button>':f.state==='claim_pending'?'<p class="small muted">교사에게 확인을 요청했어요. 결과를 알림으로 알려드려요.</p>':'<p class="small muted">수령 완료</p>')+'</div>';
+  }).join('')||'<p class="muted">조건에 맞는 습득물이 없어요. "이 검색어로 알림 받기"를 눌러두면 새로 올라올 때 알려드려요.</p>';
+}
+function renderModal(){
+  var m=$('#modal');
+  if(ui.report){
+    var it=S.items.filter(function(x){return x.id===ui.report.id})[0];
+    if(!it){m.innerHTML='';return}
+    var dmg=ui.report.kind==='damage',d=dmg?-5:-10;
+    m.innerHTML='<div class="modal" data-act="closemodal"><div class="card pop stack" style="gap:12px" role="dialog" aria-modal="true" aria-label="신고 확인"><h3>'+(dmg?'파손 신고':'미반납 신고')+'</h3>'+
+     '<p><b>'+esc(it.borrower)+'</b> 님의 매너온도가 <b class="mono" style="color:var(--bad)">'+d.toFixed(1)+'</b> 내려가요. 현재 <span class="mono">'+scoreOf(it.borrower).toFixed(1)+'°</span> → <span class="mono">'+Math.max(0,scoreOf(it.borrower)+d).toFixed(1)+'°</span></p>'+
+     '<p class="small muted">물품 「'+esc(it.title)+'」은 교사 중재 중으로 바뀌고, 교사 화면에 신고가 바로 접수돼요.</p>'+
+     '<div class="row"><button class="btn danger" data-act="reportgo">신고 접수</button><button class="btn" data-act="closemodal2">취소</button></div></div></div>';
+    return}
+  if(!ui.claim){m.innerHTML='';return}
+  var f=S.found.filter(function(x){return x.id===ui.claim})[0];if(!f){m.innerHTML='';return}
+  m.innerHTML='<div class="modal" data-act="closemodal"><div class="card pop stack" style="gap:12px" role="dialog" aria-modal="true" aria-label="주인 확인"><h3>'+esc(f.title)+' 주인 확인</h3>'+
+   '<p class="small">요청하면 교사에게 바로 알림이 가요. 선생님이 직접 확인한 뒤 인계해 줘요.</p><label class="f">물건의 특징이나 잃어버린 때·장소 (선택)<textarea id="claimNote" maxlength="80" placeholder="예: 어제 5교시 체육 시간에 두고 나왔어요. 손잡이에 이름표가 있어요." autofocus></textarea></label>'+
+   (ui.err?'<div class="err" role="alert">'+esc(ui.err)+'</div>':'')+
+   '<div class="row"><button class="btn primary" data-act="claimgo">선생님께 확인 요청</button><button class="btn" data-act="closemodal2">닫기</button></div></div></div>';
+}
+
+/* ---------- spec ---------- */
+function tbl(head,rows){return '<div class="tbl"><table><tr>'+head.map(function(h){return '<th>'+h+'</th>'}).join('')+'</tr>'+rows.map(function(r){return '<tr>'+r.map(function(c){return '<td>'+c+'</td>'}).join('')+'</tr>'}).join('')+'</table></div>'}
+function dbt(name,desc,rows){return '<details class="t"><summary><code>'+name+'</code><span>'+desc+'</span></summary>'+tbl(['필드','타입','설명'],rows.map(function(r){return ['<code>'+r[0]+'</code>','<code>'+r[1]+'</code>',r[2]]}))+'</details>'}
+function api(rows){return tbl(['메서드','경로','설명'],rows.map(function(r){return ['<span class="method '+r[0]+'">'+r[0]+'</span>','<code>'+r[1]+'</code>',r[2]]}))}
+function vSpec(){
+  return '<div class="spec">'+
+  '<h2>기획·개발 명세서</h2><p class="muted">이 앱 프로토타입은 아래 명세의 핵심 흐름(예약 용량 계산, 승인 정책, 체크인·노쇼, 매너온도, 반납, 분실물 태깅·알림)을 브라우저에서 동작하게 만든 것입니다.</p>'+
+  '<div class="sub"><a href="#a1">① 아키텍처·DB</a><a href="#a2">② 화면 구성</a><a href="#a3">③ API</a><a href="#a4">④ MVP 로드맵</a><a href="#a5">⑤ 문제와 해결</a></div>'+
+
+  '<section id="a1"><h2>① 서비스 아키텍처 &amp; DB 스키마</h2><h3>시스템 구성</h3><div class="layers">'+
+   '<div><b>클라이언트</b><span>모바일 앱(Flutter 또는 React Native) + 교사용 관리 웹(React)</span></div>'+
+   '<div><b>API 서버</b><span>Node.js(NestJS) REST API · JWT 인증 · 학교 단위 멀티테넌트(school_id)</span></div>'+
+   '<div><b>비동기 워커</b><span>BullMQ + Redis: 노쇼 타이머, 반납 알림, 이미지 인식 작업, 푸시 발송</span></div>'+
+   '<div><b>데이터</b><span>PostgreSQL(예약 정합성은 트랜잭션·행 잠금) · Redis(캐시, 레이트 리밋) · S3(사진, 얼굴·학생증 블러 후 저장)</span></div>'+
+   '<div><b>외부 연동</b><span>학교 SSO 또는 학번 인증 · FCM/APNs 푸시 · 이미지 인식 API(분류·색상·OCR)</span></div></div>'+
+   '<h3>주요 테이블</h3>'+
+   dbt('users','학생·교사·관리자',[['id','uuid PK',''],['school_id','uuid FK','학교 단위 분리'],['role','enum','student / teacher / admin'],['name, student_no, grade, class_no','text','학번은 학교 안에서 unique'],['email','text','학교 도메인만 허용'],['trust_score','numeric(4,1)','기본 36.5, 0~99'],['status','enum','active / restricted / suspended'],['push_token','text','알림용'],['created_at','timestamptz','']])+
+   dbt('facilities','시설 정의',[['id','uuid PK',''],['school_id','uuid FK',''],['name, type, location','text / enum / text','hall, practice, study, club'],['capacity','int','동시 사용 가능 인원'],['open_time, close_time','time','운영 시간'],['slot_minutes','int','기본 60'],['max_hours_per_booking','int','1회 최대 이용'],['approval_policy','enum','auto / teacher / trusted'],['min_trust_score','numeric','예약 최소 점수'],['approver_id','uuid FK null','담당 교사·부장'],['is_active','bool','']])+
+   dbt('reservations','시간대 예약',[['id','uuid PK',''],['facility_id, user_id','uuid FK',''],['start_at, end_at','timestamptz','인덱스 (facility_id, start_at)'],['headcount','int','신청 인원. 겹치는 구간의 합이 capacity 이하여야 함'],['purpose','text',''],['status','enum','pending / confirmed / checked_in / completed / no_show / rejected / cancelled'],['approved_by','uuid FK null',''],['qr_token','text','체크인용 일회성 토큰'],['checkin_at','timestamptz null',''],['created_at','timestamptz','']])+
+   dbt('items','대여·나눔 물품',[['id','uuid PK',''],['owner_id','uuid FK null','null이면 학교 비치'],['is_school_owned','bool',''],['title, category, description','text',''],['photo_url','text',''],['condition','enum','new / good / worn'],['status','enum','available / on_loan / hold / hidden'],['max_loan_minutes','int','품목별 상한'],['pickup_place','text','교환 장소(교내만)']])+
+   dbt('loans','대여 기록',[['id','uuid PK',''],['item_id, borrower_id','uuid FK',''],['requested_at, approved_at, due_at, returned_at','timestamptz',''],['status','enum','requested / active / return_pending / returned / overdue / damaged / lost / disputed'],['handover_photo_url, return_photo_url','text','전·후 상태 사진']])+
+   dbt('lost_found','습득물',[['id','uuid PK',''],['finder_id','uuid FK',''],['photo_url','text','민감정보 블러 처리본'],['title','text','AI 제안 후 사용자 수정'],['category','text',''],['colors','text[]','주요 색상'],['place_tag','text','발견 장소'],['found_at','timestamptz',''],['storage','enum','finder / office / teacher_room'],['verify_question, verify_answer_hash','text','주인 확인용'],['ai_confidence','real','낮으면 사용자 확인 요구'],['status','enum','open / claim_pending / returned / archived']])+
+   dbt('claims','주인 확인 요청',[['id','uuid PK',''],['lost_found_id, claimant_id','uuid FK',''],['answer_hash','text',''],['status','enum','pending / approved / rejected'],['resolved_by','uuid FK null','교사']])+
+   dbt('alert_keywords','분실물 알림',[['id','uuid PK',''],['user_id','uuid FK',''],['keyword','text',''],['category','text null',''],['created_at','timestamptz','']])+
+   dbt('notifications','알림함',[['id','uuid PK',''],['user_id','uuid FK',''],['type','enum','reservation / loan / lost_found / trust'],['payload','jsonb',''],['read_at','timestamptz null','']])+
+   dbt('trust_logs','매너온도 변동 기록',[['id','uuid PK',''],['user_id','uuid FK',''],['delta','numeric(3,1)','+0.3 체크인, +0.5 정시 반납, -1.0 연체, -3.0 노쇼, -5.0 파손, -10 미반납'],['reason','enum',''],['ref_type, ref_id','text / uuid','근거 기록']])+
+   dbt('reports','신고·분쟁',[['id','uuid PK',''],['reporter_id','uuid FK',''],['target_type, target_id','text / uuid',''],['kind','enum','damage / lost / theft / abuse'],['evidence_urls','text[]',''],['status','enum','open / in_review / resolved'],['handled_by','uuid FK null','교사']])+
+  '</section>'+
+
+  '<section id="a2"><h2>② 핵심 UI/UX 화면 구성</h2>'+
+   '<div class="grid2">'+
+   '<div class="card"><h3>메인 홈</h3><ul class="plain"><li>상단: 이름·학급, 매너온도 게이지와 등급</li><li>다가오는 예약(체크인 버튼 바로 노출)</li><li>내가 빌린 물건 반납 기한, 빌려준 물건 현황</li><li>바로가기 3개: 공간 예약 / 물품 대여 / 분실물</li><li>교사: 승인 대기 건수 카드</li></ul><p class="small muted" style="margin-top:8px">동선: 홈 → 항목 탭 → 해당 기능 화면, 푸시 알림 → 관련 상세로 직행</p></div>'+
+   '<div class="card"><h3>공간 예약</h3><ul class="plain"><li>시설 칩 → 7일 날짜 칩 → 시간대 목록(인원 막대 + n/정원)</li><li>시간대 선택 시 예약 패널: 이용 시간, 인원(남은 자리 제한), 목적</li><li>승인 방식 안내 배지, 노쇼 규칙 문구</li><li>내 예약 목록: 체크인·취소, 상태 배지</li></ul><p class="small muted" style="margin-top:8px">동선: 시설 → 날짜 → 시간 → 신청 → (승인 대기) → 푸시 → 현장 QR 체크인</p></div>'+
+   '<div class="card"><h3>물품 대여</h3><ul class="plain"><li>종류 칩, 카드 목록(학교 비치 / 개인, 소유자 매너온도)</li><li>대여 시간 선택 후 요청, 대여 중이면 반납 기한 표시</li><li>내 물건 등록 폼, 반납 확인·파손·미반납 신고</li></ul><p class="small muted" style="margin-top:8px">동선: 검색 → 대여 요청 → 교환 장소 안내 → 반납 → 점수 반영</p></div>'+
+   '<div class="card"><h3>분실물 센터</h3><ul class="plain"><li>검색창 + 종류 칩 + 키워드 알림 등록</li><li>습득 등록: 사진 → 자동 태그(색상·종류·장소) → 수정 → 보관 위치·인증 질문 → 게시</li><li>카드: 사진, 태그, 발견 시각, 보관 위치, "내 물건이에요"</li></ul><p class="small muted" style="margin-top:8px">동선: 찾기(검색·알림) 또는 올리기(사진) → 인증 질문 → 보관 장소 수령</p></div></div></section>'+
+
+  '<section id="a3"><h2>③ 주요 API 엔드포인트 (REST)</h2><p class="muted small">모든 경로는 <code>/api/v1</code> 접두사, JWT Bearer 인증. 응답은 JSON, 목록은 cursor 페이지네이션.</p>'+
+   '<h3>인증·사용자</h3>'+api([['POST','/auth/login','학교 SSO 또는 학번 로그인'],['GET','/users/me','내 정보와 매너온도'],['GET','/users/me/trust-logs','점수 변동 내역'],['GET','/notifications','알림 목록'],['PATCH','/notifications/:id/read','읽음 처리']])+
+   '<h3>공간 예약</h3>'+api([['GET','/facilities','시설 목록과 정책'],['GET','/facilities/:id/availability?date=','시간대별 사용 인원·잔여'],['POST','/reservations','예약 신청 (정원 검사 후 pending 또는 confirmed)'],['GET','/reservations?mine=true','내 예약'],['DELETE','/reservations/:id','취소 (직전 취소는 감점)'],['POST','/reservations/:id/check-in','QR·위치 체크인'],['PATCH','/reservations/:id/approval','교사 승인 또는 반려 (teacher)'],['POST','/facilities','시설 등록 (admin)'],['PATCH','/facilities/:id','정책·정원 수정 (admin)']])+
+   '<h3>물품 대여</h3>'+api([['GET','/items?category=&status=','물품 목록'],['POST','/items','물품 등록'],['PATCH','/items/:id','수정·대여 중단'],['POST','/items/:id/loans','대여 요청'],['PATCH','/loans/:id/approve','소유자 수락'],['POST','/loans/:id/return','반납 요청 (사진 첨부)'],['PATCH','/loans/:id/confirm-return','소유자 반납 확인'],['POST','/reports','파손·미반납·도난 신고'],['PATCH','/reports/:id','교사 중재 결과 (teacher)']])+
+   '<h3>분실물</h3>'+api([['POST','/lost-found/upload','사진 업로드와 AI 태깅 결과 반환'],['POST','/lost-found','습득물 게시'],['GET','/lost-found?q=&category=&place=','검색'],['POST','/lost-found/:id/claims','주인 확인 요청'],['PATCH','/claims/:id','교사 승인 (teacher)'],['POST','/alert-keywords','키워드 알림 등록'],['DELETE','/alert-keywords/:id','알림 해제']])+
+  '</section>'+
+
+  '<section id="a4"><h2>④ MVP 개발 로드맵</h2>'+tbl(['단계','범위','이유'],[
+   ['<b>1단계 · 4주</b>','학교 인증 로그인, 시설·시간대 예약, 인원 제한, 자동/교사 승인, QR 체크인, 노쇼 자동 해제, 교사 승인 화면, 푸시 알림','규칙이 명확하고 교사에게 바로 쓸모가 있어 도입 설득이 쉬움. 이후 기능이 쓸 인증·알림·점수 기반을 여기서 확보'],
+   ['<b>2단계 · 3주</b>','분실물 게시·검색·키워드 알림(태그는 수동 선택 + 색상 자동), 주인 확인 질문, 보관 위치','AI 없이도 가치가 있고 분쟁 위험이 낮음. 사진 데이터가 쌓이면 3단계 모델 개선에 활용'],
+   ['<b>3단계 · 4주</b>','학교 비치 물품 대여(학생증 태그, 반납함), 개인 물품 나눔, 매너온도 전면 적용, 신고·중재','분쟁 가능성이 큰 P2P는 학교 비치 물품으로 먼저 운영 규칙을 검증한 뒤 확대'],
+   ['<b>4단계</b>','AI 자동 태깅(종류·브랜드·OCR), 유사 이미지 매칭 알림, 통계 대시보드, 대학교 모드(학과·동아리 단위)','데이터와 운영 경험이 쌓인 뒤 고도화']])+'</section>'+
+
+  '<section id="a5"><h2>⑤ 예상 문제점과 해결 방안</h2>'+tbl(['문제','앱 기능으로 해결'],[
+   ['공간 노쇼','시작 10분 전~후 QR·위치 체크인, 미체크인 시 자동 해제와 슬롯 재공개, 매너온도 -3.0, 반복 시 7일 예약 제한, 취소 마감(1시간 전) 안내와 대기열'],
+   ['특정 학생·동아리의 독점','주당 이용 시간 한도, 연속 예약 제한, 최소 인원 조건(음악실 2명 이상), 인원 막대로 현황 공개'],
+   ['물품 미반납','반납 30분 전·정시 푸시, 연체 -1.0, 단계별 알림(본인 → 담임), 장기 미반납 시 대여·예약 제한, 학교 비치 물품은 학생증 태그와 반납함'],
+   ['파손·분실','대여 전후 상태 사진 필수, 신고 → 교사 중재 → 결과 반영, 파손 -5.0 · 미반납 -10, 변상은 학교 규정과 보호자 안내에 따라 오프라인 처리'],
+   ['도난·고가품','고가품·귀중품 등록 차단, 교환은 교내 지정 장소만, 대여 시 학번 인증과 기록 보존'],
+   ['허위 인수·분실물 악용','인증 질문, 고가품은 학생처 보관 권장, 수령 시 교사 확인과 로그'],
+   ['개인정보·미성년자 안전','사진 속 얼굴·학생증 자동 블러, 학교 계정만 가입, 앱 내 자유 채팅 없이 정해진 장소 교환, 신고 버튼'],
+   ['AI 오인식','신뢰도가 낮으면 사용자 확인을 요구하고 모든 태그를 수정 가능하게 함'],
+   ['점수 악용·따돌림','매너온도는 시스템 이벤트로만 변동, 상호 평가·댓글 점수 없음, 이의 제기 버튼과 교사 정정']])+'</section></div>';
+}
+
+/* ---------- color analysis ---------- */
+function rgb2hsl(r,g,b){r/=255;g/=255;b/=255;var mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2,h=0,s=0,d=mx-mn;
+  if(d){s=l>.5?d/(2-mx-mn):d/(mx+mn);h=mx===r?(g-b)/d+(g<b?6:0):mx===g?(b-r)/d+2:(r-g)/d+4;h*=60}return [h,s,l]}
+function cname(r,g,b){var x=rgb2hsl(r,g,b),h=x[0],s=x[1],l=x[2];
+  if(l<.16)return '검정색';if(l>.88)return '흰색';if(s<.14)return l<.5?'진회색':'회색';
+  if(h>=15&&h<45&&l<.4)return '갈색';
+  if(h<15||h>=345)return '빨간색';if(h<42)return '주황색';if(h<68)return '노란색';if(h<170)return '초록색';if(h<195)return '청록색';if(h<255)return '파란색';if(h<290)return '보라색';return '분홍색'}
+function analyze(img){
+  var c=document.createElement('canvas');c.width=c.height=48;var x=c.getContext('2d');x.drawImage(img,0,0,48,48);
+  var d=x.getImageData(0,0,48,48).data,b={};
+  for(var yy=6;yy<42;yy++)for(var xx=6;xx<42;xx++){var i=(yy*48+xx)*4,r=d[i],g=d[i+1],bl=d[i+2];
+    var hsl=rgb2hsl(r,g,bl);if(hsl[2]>.93)continue;var n=cname(r,g,bl),w=1+hsl[1];
+    var o=b[n]||(b[n]={w:0,r:0,g:0,b:0,k:0});o.w+=w;o.r+=r;o.g+=g;o.b+=bl;o.k++}
+  var best=null;Object.keys(b).forEach(function(k){if(!best||b[k].w>b[best].w)best=k});
+  if(!best)return {hex:'#8a8a8a',name:'회색'};
+  var o=b[best];
+  var h2=function(v){var s=Math.round(v/o.k).toString(16);return s.length<2?'0'+s:s};
+  return {hex:'#'+h2(o.r)+h2(o.g)+h2(o.b),name:best};
+}
+
+/* ---------- actions ---------- */
+function setPath(p,v){var k=p.split('.'),o=ui;for(var i=0;i<k.length-1;i++)o=o[k[i]];o[k[k.length-1]]=v}
+document.addEventListener('input',function(e){
+  var el=e.target;if(!el.dataset||!el.dataset.ui)return;
+  var v=el.dataset.num?Number(el.value):el.value;setPath(el.dataset.ui,v);
+  if(el.dataset.ui==='q'){renderFoundList()}
+});
+document.addEventListener('change',function(e){
+  var el=e.target;
+  if(el.id==='demo'){S.demo=el.checked;save();render();return}
+  if(el.id==='photo'&&el.files&&el.files[0]){handlePhoto(el.files[0]);return}
+  if(el.dataset&&el.dataset.ui&&(el.dataset.ui==='len'||el.dataset.rerender)){var v=el.dataset.num?Number(el.value):el.value;setPath(el.dataset.ui,v);ui.err='';render()}
+});
+function handlePhoto(file){
+  var rd=new FileReader();
+  rd.onload=function(){var img=new Image();img.onload=function(){
+    var c=document.createElement('canvas'),m=360,sc=Math.min(1,m/Math.max(img.width,img.height));c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    var res=analyze(img),ratio=img.width/img.height;
+    ui.ff.photo=c.toDataURL('image/jpeg',.7);ui.ff.color=res.hex;ui.ff.cname=res.name;
+    ui.ff.rec=(ratio>1.9||ratio<.52)?'우산':'';if(ui.ff.rec)ui.ff.cat=ui.ff.rec;
+    ui.err='';render()};img.onerror=function(){toast('이미지를 읽지 못했어요. 다른 사진을 올려 보세요.')};img.src=rd.result};
+  rd.readAsDataURL(file);
+}
+function resetUi(){ui.err=''}
+var A={
+ tab:function(v){ui.tab=v;ui.err='';ui.bell=false;ui.ffOpen=false;ui.nfOpen=false;try{history.replaceState(null,'','#'+v)}catch(e){}window.scrollTo(0,0)},
+ role:function(v){ui.role=v;try{sessionStorage.setItem('ss-role',v)}catch(e){}ui.tab='home';ui.roster=false;
+  if(v==='teacher'){var pc=BK().filter(function(b){return b.status==='pending'}).length,cc=CL.all().filter(function(c){return c.status==='pending'}).length,rc=RP.all().filter(function(r){return r.status==='pending'}).length;
+    toast(pc||cc||rc?'확인할 요청이 있어요: 예약 '+pc+'건, 주인 확인 '+cc+'건, 신고 '+rc+'건':'교사 화면이에요. 학생 요청이 오면 바로 알려드려요.')}
+  else toast('학생 화면으로 돌아왔어요.')},
+ bell:function(){ui.bell=!ui.bell},
+ readall:function(){S.notes.forEach(function(n){n.read=true})},
+ demo:function(){},
+ reset:function(){S=seed();ui.sel=null;toast('데모 데이터를 처음 상태로 되돌렸어요.')},
+ fac:function(v){ui.fac=v;ui.sel=null;ui.len=1;ui.n=1;ui.err=''},
+ date:function(v){ui.date=v;ui.formOpen=true;ui.sel=null;ui.len=1;ui.err='';ui.scrollTo='dayside'},
+ closeform:function(){ui.formOpen=false;ui.sel=null;ui.err=''},
+ calprev:function(){var c=ui.cal;c.m--;if(c.m<0){c.m=11;c.y--}},
+ calnext:function(){var c=ui.cal;c.m++;if(c.m>11){c.m=0;c.y++}},
+ tcancel:function(id){if(!canWrite())return;var b=getB(id);if(!b)return;patchB(id,{status:'cancelled',canceledBy:'teacher',decidedAt:Date.now()},'예약을 취소했어요. 신청자에게 알림이 가요.')},
+ slot:function(v){ui.sel=Number(v);ui.len=1;ui.err='';ui.scrollTo='bookpanel'},
+ book:function(){
+  if(!canWrite())return;
+  var f=fac(ui.fac),h=ui.sel,len=Math.min(ui.len||1,20-h),n=Math.floor(Number(ui.n)),rem=f.cap;
+  for(var i=h;i<h+len;i++)rem=Math.min(rem,f.cap-used(f.id,ui.date,i));
+  if(S.me.score<20){ui.err='매너온도가 20 미만이라 예약이 제한돼요. 담당 교사에게 문의해 주세요.';return}
+  if(!ui.purpose.trim()){ui.err='사용 목적을 입력해 주세요.';return}
+  if(!(n>=1)){ui.err='이용 인원을 1명 이상으로 입력해 주세요.';return}
+  if(n>rem){ui.err='남은 자리는 '+rem+'명이에요. 인원을 줄이거나 다른 시간을 골라 주세요.';return}
+  var auto=false; // 모든 공간은 교사 승인 후에만 확정
+  addB({id:'b'+Date.now()+Math.random().toString(36).slice(2,5),fac:f.id,date:ui.date,hour:h,len:len,n:n,purpose:ui.purpose.trim(),status:auto?'confirmed':'pending',mine:true,who:MY_NAME||S.me.name});
+  note(f.name+' '+pad(h)+':00 예약이 '+(auto?'확정됐어요. 시작 10분 전부터 체크인하세요.':'접수됐어요. 교사 승인을 기다리는 중이에요.'));
+  toast(auto?'예약이 확정됐어요.':'승인 요청을 보냈어요. 교사 화면에 바로 표시돼요.');ui.sel=null;ui.purpose='';ui.n=1;ui.len=1;ui.err='';
+ },
+ cancel:function(id){var b=getB(id);if(!b)return;
+  var soon=startAt(b).getTime()-Date.now()<3600000&&b.status==='confirmed';patchB(id,{status:'cancelled'});
+  if(soon){adjust(-1,'직전 취소');toast('시작 1시간 이내 취소라 매너온도 -1.0이 반영됐어요.')}else toast('예약을 취소했어요.')},
+ checkin:function(id){var b=getB(id);if(!b)return;
+  var diff=(Date.now()-startAt(b).getTime())/60000;
+  if(!S.demo&&(diff<-10||diff>10)){toast('체크인은 시작 10분 전부터 10분 후까지 가능해요.');return}
+  patchB(id,{status:'checked'});adjust(0.3,'정시 체크인');toast('체크인 완료. 매너온도 +0.3')},
+ noshow:function(id){var b=getB(id);if(!b)return;patchB(id,{status:'noshow'});adjust(-3,'노쇼: '+fac(b.fac).name);note('체크인이 없어 예약이 해제되고 매너온도 -3.0이 반영됐어요.');toast('노쇼 처리됐어요. 매너온도 -3.0, 슬롯이 다시 열렸어요.')},
+ approve:function(id){if(!canWrite())return;var b=getB(id);if(b){patchB(id,{status:'confirmed',decidedAt:Date.now()},'승인했어요. 신청자 화면에 바로 반영돼요.')}},
+ reject:function(id){if(!canWrite())return;var b=getB(id);if(b){patchB(id,{status:'rejected',decidedAt:Date.now()},'반려했어요. 슬롯이 다시 열렸어요.')}},
+ icat:function(v){ui.cat=v},
+ nfopen:function(){ui.nfOpen=!ui.nfOpen;ui.err=''},
+ nfsave:function(){if(!ui.nf.title.trim()){ui.err='물건 이름을 입력해 주세요.';return}
+  S.items.unshift({id:'i'+Date.now(),title:ui.nf.title.trim(),cat:ui.nf.cat,owner:S.me.name,school:false,desc:ui.nf.desc.trim()||'설명 없음',status:'available'});
+  ui.nf={title:'',cat:'충전기',desc:''};ui.nfOpen=false;ui.err='';toast('내 물건이 등록됐어요.')},
+ borrow:function(id){var i=S.items.filter(function(x){return x.id===id})[0];if(!i||i.status!=='available')return;
+  if(S.me.score<30){toast('매너온도가 30 미만이라 대여가 제한돼요.');return}
+  var sel=$('#due-'+id),m=(sel&&Number(sel.value))||240;i.status='borrowed';i.borrower=S.me.name;i.at=Date.now();i.due=new Date(Date.now()+m*60000).toISOString();
+  toast(i.school?'대여됐어요. '+hm(i.due)+'까지 반납함에 반납하세요.':'대여 요청이 수락됐어요. '+hm(i.due)+'까지 반납해 주세요.');
+  if(!i.school)note(i.owner+' 님의 '+i.title+' 대여가 시작됐어요.')},
+ return:function(id){var i=S.items.filter(function(x){return x.id===id})[0];if(!i)return;
+  if(!retOpen(i)){toast('대여한 지 4시간이 지나야 반납할 수 있어요. '+hm(i.at+MINLOAN)+' 이후에 반납해 주세요. (발표용: 하단 데모 모드를 켜면 바로 반납돼요)');return}
+  var late=new Date(i.due)<new Date();if(late){adjust(-1,'연체 반납')}else{adjust(0.5,'정시 반납')}
+  i.status='available';i.borrower=null;i.due=null;toast(late?'기한이 지나 매너온도 -1.0이 반영됐어요.':'정시 반납! 매너온도 +0.5')},
+ confirmret:function(id){var i=S.items.filter(function(x){return x.id===id})[0];if(!i)return;
+  if(!retOpen(i)){toast('대여한 지 4시간이 지나야 반납을 확인할 수 있어요. '+hm(i.at+MINLOAN)+' 이후에 확인해 주세요.');return}
+  var late=new Date(i.due)<new Date(),p=i.borrower;penalize(p,late?-1:0.5,late?'연체 반납':'정시 반납');
+  i.status='available';i.borrower=null;i.due=null;toast(p+' 님 반납을 확인했어요.'+(late?' (연체 -1.0 반영)':' (+0.5 반영)'))},
+ damage:function(id){ui.report={id:id,kind:'damage'}},
+ lostitem:function(id){ui.report={id:id,kind:'lost'}},
+ reportgo:function(){var r=ui.report;if(!r)return;var i=S.items.filter(function(x){return x.id===r.id})[0];ui.report=null;if(!i||!i.borrower)return;
+  var dmg=r.kind==='damage',d=dmg?-5:-10,p=i.borrower,before=scoreOf(p),after=penalize(p,d,dmg?'파손 신고':'미반납 신고');
+  i.status='hold';
+  RP.add({id:'r'+Date.now()+Math.random().toString(36).slice(2,5),kind:r.kind,status:'applied',reasons:[RK[r.kind]],itemId:i.id,itemTitle:i.title,targetName:p,delta:d,before:before,after:after,reporter:MY_NAME||S.me.name,ruid:MY_ID||null});
+  toast(p+' 님 매너온도 '+before.toFixed(1)+'° → '+after.toFixed(1)+'°로 내려갔어요. 교사에게 신고가 접수됐어요.')},
+ roster:function(){ui.roster=!ui.roster},
+ demoborrow:function(id){var i=S.items.filter(function(x){return x.id===id})[0];if(!i||i.status!=='available')return;
+  var pool=ROSTER().filter(function(x){return !x.me});if(!pool.length)return;var st=pool[Math.floor(Math.random()*pool.length)];
+  i.status='borrowed';i.borrower=st.name;i.at=Date.now();i.due=new Date(Date.now()+4*3600000).toISOString();toast(st.name+' 님이 「'+i.title+'」을 빌려 갔어요. 반납 확인·신고를 시험해 보세요.')},
+ releasehold:function(id){var i=S.items.filter(function(x){return x.id===id})[0];if(!i)return;i.status='available';i.borrower=null;i.due=null;i.at=null;toast('중재를 마쳤어요. 이 물품은 다시 대여할 수 있어요.')},
+ rfopen:function(){ui.rfOpen=!ui.rfOpen;ui.err='';if(ui.rfOpen)ui.rf={target:'',item:'',reasons:[],detail:''}},
+ rfreason:function(v){var a=ui.rf.reasons,i=a.indexOf(v);if(i>-1)a.splice(i,1);else a.push(v)},
+ rfsave:function(){var rf=ui.rf;if(!canWrite())return;
+  if(!rf.target){ui.err='신고할 학생을 선택해 주세요.';return}
+  if(!rf.reasons.length){ui.err='신고 사유를 하나 이상 체크해 주세요.';return}
+  var sum=0,labels=[];rf.reasons.forEach(function(k){var r=rsOf(k);if(r){sum+=r[2];labels.push(r[1])}});sum=Math.max(-10,sum);
+  var it=S.items.filter(function(x){return x.id===rf.item})[0];
+  RP.add({id:'r'+Date.now()+Math.random().toString(36).slice(2,5),kind:'general',status:'pending',targetName:rf.target,itemTitle:it?it.title:'(관련 물품 없음)',reasons:labels,suggested:sum,detail:(rf.detail||'').trim(),reporter:MY_NAME||S.me.name,ruid:MY_ID||null,delta:0});
+  ui.rf={target:'',item:'',reasons:[],detail:''};ui.rfOpen=false;ui.err='';toast('신고가 접수됐어요. 교사가 확인한 뒤 알려드려요.')},
+ rpok:function(id){var r=RP.get(id);if(!r)return;var before=scoreOf(r.targetName),after=r.suggested?penalize(r.targetName,r.suggested,'신고 확인'):before;
+  RP.patch(id,{status:'applied',delta:r.suggested||0,before:before,after:after,decidedAt:Date.now()},r.suggested?r.targetName+' 님 매너온도 '+before.toFixed(1)+'° → '+after.toFixed(1)+'°로 조정했어요.':'확인 완료로 처리했어요.')},
+ rpno:function(id){var r=RP.get(id);if(!r)return;RP.patch(id,{status:'dismissed',decidedAt:Date.now()},'신고를 기각했어요. 감점은 없어요.')},
+ fcat:function(v){ui.fcat=v},
+ ffopen:function(){ui.ffOpen=!ui.ffOpen;ui.err=''},
+ ffsave:function(){var f=ui.ff;
+  if(!f.photo){ui.err='사진을 먼저 올려 주세요.';return}
+  var title=f.title.trim()||(f.cname+' '+f.cat);
+  var rec={id:'f'+Date.now(),title:title,cat:f.cat,color:f.color,cname:f.cname,place:f.place,store:f.store,t:Date.now(),state:'open',photo:f.photo};
+  S.found.unshift(rec);
+  var hay=(rec.title+' '+rec.cat+' '+rec.cname+' '+rec.place).toLowerCase();
+  S.alerts.forEach(function(k){if(k&&hay.indexOf(k.toLowerCase())>-1)note('"'+k+'" 알림: 새 습득물 '+rec.title+' ('+rec.place+')이 올라왔어요.')});
+  ui.ff={photo:null,color:'#8a8a8a',cname:'회색',cat:'기타',place:'체육관',store:'office',title:'',q:'',a:'',rec:''};ui.ffOpen=false;ui.err='';
+  toast('게시됐어요. 키워드를 걸어둔 학생에게 알림이 가요.')},
+ alertadd:function(){var k=ui.q.trim();if(!k){toast('알림 받을 검색어를 먼저 입력해 주세요.');return}
+  if(S.alerts.indexOf(k)>-1){toast('이미 등록된 키워드예요.');return}S.alerts.push(k);toast('"'+k+'" 키워드가 등록됐어요. 새 습득물이 올라오면 알려드려요.')},
+ alertdel:function(v){S.alerts.splice(Number(v),1)},
+ claim:function(id){ui.claim=id;ui.err=''},
+ closemodal2:function(){ui.claim=null;ui.report=null;ui.err=''},
+ claimgo:function(){var f=S.found.filter(function(x){return x.id===ui.claim})[0];if(!f)return;if(!canWrite())return;
+  var note1=(($('#claimNote')||{}).value||'').trim();
+  CL.add({id:'c'+Date.now()+Math.random().toString(36).slice(2,5),foundId:f.id,title:f.title,cat:f.cat,place:f.place,store:f.store,note:note1,claimant:MY_NAME||S.me.name,cuid:MY_ID||null,status:'pending'});
+  f.state='claim_pending';
+  toast('선생님께 확인을 요청했어요. 교사 화면에 바로 알림이 가요.');
+  ui.claim=null;ui.err=''},
+ claimok:function(id){var c=CL.get(id);if(!c)return;CL.patch(id,{status:'approved',decidedAt:Date.now()},c.claimant+' 님에게 인계하도록 확인했어요. 신청자에게 알림이 가요.');if(!DB){var f1=S.found.filter(function(x){return x.id===c.foundId})[0];if(f1)f1.state='claimed'}},
+ claimno:function(id){var c=CL.get(id);if(!c)return;CL.patch(id,{status:'rejected',decidedAt:Date.now()},'주인이 아니라고 처리했어요. 습득물은 다시 보관 중으로 돌아가요.');if(!DB){var f2=S.found.filter(function(x){return x.id===c.foundId})[0];if(f2)f2.state='open'}}
+};
+document.addEventListener('click',function(e){
+  var el=e.target.closest('[data-act]');if(!el)return;
+  var a=el.dataset.act;
+  if(a==='closemodal'){if(e.target!==el)return;a='closemodal2'}
+  if(a==='demo')return;
+  if(!A[a])return;
+  A[a](el.dataset.v||el.dataset.id);save();render();
+});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&(ui.claim||ui.report)){ui.claim=null;ui.report=null;render()}});
+
+var hh=(location.hash||'').replace('#','');if(['home','space','items','found'].indexOf(hh)>-1)ui.tab=hh;
+window.addEventListener('hashchange',function(){var x=(location.hash||'').replace('#','');if(['home','space','items','found'].indexOf(x)>-1&&x!==ui.tab){ui.tab=x;render()}});
+try{var rr=sessionStorage.getItem('ss-role');if(rr==='teacher'||rr==='student')ui.role=rr}catch(e){}
+function sub(name,coll,onChange){
+  var first=true;
+  DB.collection(name).onSnapshot(function(snap){
+    coll.arr=snap.docs.map(function(d){return Object.assign({},d.data(),{id:d.id})});
+    var ch=first?[]:snap.docChanges().filter(function(c){return !c.doc.metadata.hasPendingWrites});
+    first=false;if(onChange)onChange(ch);save();render();
+  },function(e){coll.arr=null;render()});
+}
+function setLive(on,txt){var l=$('#live');if(l){l.className='live'+(on?'':' off');l.lastChild.textContent=txt;l.hidden=(txt==='실시간 연결됨'||txt==='로컬 데모'||txt==='연결 중')}}
+setLive(false,'로컬 데모');
+(async function connect(){
+  try{
+    var user=await window.claude.use('user'),db=await window.claude.use('db');
+    if(!db||!user)return;
+    try{MY_ID=await user.id()}catch(e){}
+    try{MY_NAME=(await user.name())||''}catch(e){}
+    if(!MY_ID)return;
+    try{RO=((await user.can('data.write'))===false)}catch(e){}
+    DB=db;var first=true;
+    DB.collection('bookings').onSnapshot(function(snap){
+      var arr=snap.docs.map(function(d){return Object.assign({},d.data(),{id:d.id})});
+      if(!first){snap.docChanges().forEach(function(c){
+        var b=c.doc.data();if(!b||c.doc.metadata.hasPendingWrites)return;
+        var mine=b.uid===MY_ID,f=fac(b.fac);if(!f)return;
+        if(c.type==='added'&&ui.role==='teacher'&&(b.status==='pending'||b.status==='confirmed')){var m=(b.who||'학생')+' 님이 '+f.name+' '+b.date.slice(5).replace('-','/')+' '+pad(b.hour)+':00 '+(b.status==='pending'?'예약을 요청했어요. 승인이 필요해요.':'예약했어요.');note(m);toast(m)}
+        if(c.type==='modified'&&mine&&(b.status==='confirmed'||b.status==='rejected'||(b.status==='cancelled'&&b.canceledBy==='teacher'))){var m2=f.name+' '+b.date.slice(5).replace('-','/')+' '+pad(b.hour)+':00 예약이 '+(b.status==='confirmed'?'승인됐어요.':b.status==='rejected'?'반려됐어요.':'교사에 의해 취소됐어요.');note(m2);toast(m2)}
+      })}
+      first=false;DBK=arr;setLive(!RO,RO?'읽기 전용 계정':'실시간 연결됨');sweep();save();render();
+    },function(e){DBK=null;setLive(false,'연결 끊김');render()});
+    sub('students',STU,function(){
+      var mine=STU.get(MY_ID);
+      if(!mine){if(!meDone){meDone=true;syncMe()}return}
+      meDone=true;
+      if((mine.cls!==g1(S.me.cls)||mine.name!==(MY_NAME||S.me.name))&&!syncT)syncMe();
+      if(!syncT&&mine.score!==S.me.score){var old=S.me.score,nv=mine.score;S.me.score=nv;S.log.unshift({t:Date.now(),d:Math.round((nv-old)*10)/10,why:'교사 확인 결과'});S.log=S.log.slice(0,20);var m3='매너온도가 '+old.toFixed(1)+'° → '+nv.toFixed(1)+'°로 조정됐어요.';note(m3);toast(m3)}
+    });
+    sub('reports',RP,function(ch){ch.forEach(function(c){var r=c.doc.data();
+      if(c.type==='added'&&ui.role==='teacher'){var m=r.status==='pending'?'새 신고가 접수됐어요: '+r.targetName+' 님 ('+(r.reasons||[]).join(', ')+'). 확인이 필요해요.':r.targetName+' 님에 대한 '+(RK[r.kind]||'신고')+'가 접수됐어요. ('+r.itemTitle+')';note(m);toast(m)}
+      if(c.type==='modified'&&MY_ID&&r.ruid===MY_ID&&(r.status==='applied'||r.status==='dismissed')){var m4='내가 한 신고('+r.targetName+' 님)가 '+(r.status==='applied'?'확인됐어요. 교사가 매너온도를 조정했어요.':'검토 후 기각됐어요.');note(m4);toast(m4)}})});
+    sub('claims',CL,function(ch){
+      CL.all().forEach(function(c){if(!MY_ID||c.cuid!==MY_ID)return;var f=S.found.filter(function(x){return x.id===c.foundId})[0];if(!f)return;
+        if(c.status==='approved'&&f.state!=='claimed')f.state='claimed';
+        if(c.status==='rejected'&&f.state==='claim_pending')f.state='open'});
+      ch.forEach(function(c){var x=c.doc.data();
+        if(c.type==='added'&&x.status==='pending'&&ui.role==='teacher'){var m='물건의 주인이 나타났어요: '+x.title+' ('+x.claimant+' 님 요청)';note(m);toast(m)}
+        if(c.type==='modified'&&MY_ID&&x.cuid===MY_ID&&(x.status==='approved'||x.status==='rejected')){var m2=x.status==='approved'?x.title+' 인계가 확인됐어요. '+FSTORE[x.store]+' 장소에서 받아 가세요.':x.title+' 주인 확인이 거절됐어요. 선생님께 문의해 주세요.';note(m2);toast(m2)}})});
+  }catch(e){setLive(false,'로컬 데모')}
+})();
+sweep();render();
+setInterval(function(){if(sweep())render()},60000);
+})();
+</script>
+
+</body></html>
